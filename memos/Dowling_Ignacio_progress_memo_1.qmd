@@ -1,0 +1,125 @@
+---
+title: "Progress Memo 1"
+subtitle: |
+  | Final Project 
+  | Data Science 2 with R (STAT 301-2)
+author: "Ignacio Dowling"
+date: today
+
+format:
+  html:
+    toc: true
+    embed-resources: true
+    
+execute:
+  warning: false
+
+from: markdown+emoji 
+reference-location: margin
+citation-location: margin
+---
+
+::: {.callout-tip icon=false}
+
+## Loading Packages
+```{r}
+library(tidyverse)
+library(readr)
+library(skimr)
+library(naniar)
+library(here)
+library(janitor)
+```
+
+
+## Github Repo Link
+
+To link to your github **repo**sitory, appropriately edit the example link below. Meaning replace `https://your-github-repo-url` with your github repo url. Suggest verifying the link works before submitting.
+
+[https://github.com/stat301-2-2024-winter/final-project-2-idowling11](https://github.com/stat301-2-2024-winter/final-project-2-idowling11)
+
+:::
+
+::: {.callout-warning}
+GitHub (free account) cannot store large files. If you try to commit and push a large dataset you will have an ERROR! Any file over 100 MB (100,000 KB) needs to be added to the `.gitignore` file BEFORE committing.
+
+**We may need to do that for files in your final project!**
+:::
+
+## Prediction Problem
+
+I would like to create a model that predicts an NBA player's yearly salary based on their age, team, role, season, and the dozens of other season statistics in this set. Then, I could possibly build on that by comparing the predicted annual salary to their actual one to determine whether they're overpaid or underpaid. However, I'd use the first problem as a foundation for now: predicting an NBA player's "deserved" salary based on factors/statistics, which is a regression problem. The variable I'm trying to predict is player_salary_in, which I will rename to player_salary.
+
+I'm interested in the NBA, and thought this would be fun. Fans constantly bicker about different players' values, especially ones that are considered overpaid and ones that are underpaid. Finding a diamond in the rough (or vice versa) greatly impacts roster construction, which of course impacts game results. A prediction model would take much  more into account beyond comparing a salary amount to other players in the league at a given time, and would give someone a much better idea of whether a player met their contract demands in a given year.
+
+## Data source
+
+Here is my data source: a link to a Kaggle dataset of National Basketball Association individual player statistics and salary data from 1950 to 2017. I am using the "Basic Season - Season Stats" sheet.^[Here is a --- [link](https://www.kaggle.com/datasets/whitefero/nba-players-advanced-season-stats-19782016) to the Kaggle page with the dataset.]
+
+## Data Quality Check
+
+```{r}
+# reading data in
+nba_season_stats <- read_csv(here("data/nba_season_stats.csv"))
+
+# evaluating missingnness
+skim(nba_season_stats)
+```
+
+This set has 24,625 observations and 54 variables. Two of those appear to be left blank (blan1 and blank2) for formatting purposes, so eliminating them would leave me with 52. There are 10 character variables, some of which can likely be converted to numeric (Salary, true shooting%, free throw rate, fg%, 2p%, efg%, ft%), which would leave us with position and team as categorical ones. I'll likely make age and season start into factors, which would make up around 5 categorical predictors to go along with the 42 dbl variables I have. In all, I'd assume to have around 40 predictors.
+
+As for missingness, there's a moderate amount here. In fact, salary, has the most missingness of all the variables here, with 13,647 observations being not applicable. Examining the data further, it appears that salary wasn't recorded for players in the dataset before 1990. However, that still leaves me with just under 11,000 observations and 27 years of players to work with, which is substantial. 
+
+Most of the season statistics also have some missingness, though it is less substantial.
+
+## Why this data
+
+This data is comprehensive, and has dozens of advanced and basic statistics to make this thorough. It also includes every NBA player for nearly seven decades, giving me a very large set to work with. Even though there's missingness (more on that later), it's substantial enough where even eliminating players whose salaries weren't recorded leaves me at a nice total.
+
+
+## Potential data issues
+
+As stated above, the missingess and requirement to change some of the variable types could lead to some cleaning. Changing salary to a numeric will be a little tough, but the size and number of predictors seem relatively manageable.
+
+## Target Variable Analysis
+
+```{r}
+# cleaning variable names
+nba_season_statistics <- nba_season_stats |>
+  clean_names()
+  
+# removing dollar sign from salary
+nba_season_statistics$player_salary_in = gsub("\\$", "", nba_season_statistics$player_salary_in)
+
+# removing commas from salary
+nba_season_statistics$player_salary_in = as.numeric(gsub("\\,", "", nba_season_statistics$player_salary_in))
+
+# renaming player_salary_in to player_salary
+nba_season_statistics <- nba_season_statistics |>
+  rename(player_salary = player_salary_in)
+
+# saving cleaned target variable dataset
+write_csv(nba_season_statistics, file = here("data/nba_season_statistics.csv"))
+```
+
+```{r}
+# univariate analysis
+# checking missingness
+nba_season_statistics |>
+  skim(player_salary)
+
+# distribution
+nba_season_statistics |>
+  ggplot(aes(x = player_salary)) +
+  geom_histogram(color = "white") 
+```
+
+The data appears to be heavily right-skewed. It makes sense; only the best players make an immense amount of money, and salaries for an average player have only begun to really increase over the last 10-20 years due to more league revenue and inflation.
+
+Thus, log-transforming this data is a must, and it's something I'm planning on doing. Outside of that, the mean annual salary is 3,894,082 dollars (likely affected by the high-end salaries). Meanwhile, the median is 2,186,400 dollars. The lowest salary is 2,706 dollars, while the highest one is over 34 million.
+
+For missingness, as stated above, I'll likely plan on filtering out those players without salary data, leaving me at around 11,000 observations. Obviously, since their salaries are missing, they did not affect the histogram or the metrics listed above.
+
+## Misc
+
+I'll likely look to fit the models by Week 8 or 9 of the quarter, leaving me two weeks to analyze everything. I'll also filter out the 13,648 missing salaries, most likely.
