@@ -19,8 +19,6 @@ reference-location: margin
 citation-location: margin
 ---
 
-::: {.callout-tip icon=false}
-
 ```{r}
 #| echo: false
 library(tidyverse)
@@ -32,7 +30,6 @@ library(janitor)
 library(knitr)
 ```
 
-:::
 
 ::: {.callout-tip icon=false}
 ## Github Repo Link
