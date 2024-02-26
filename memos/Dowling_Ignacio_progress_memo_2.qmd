@@ -21,29 +21,58 @@ citation-location: margin
 
 ::: {.callout-tip icon=false}
 
-## Loading Packages
 ```{r}
+#| echo: false
 library(tidyverse)
 library(readr)
 library(skimr)
 library(naniar)
 library(here)
 library(janitor)
+library(knitr)
 ```
 
+:::
 
+::: {.callout-tip icon=false}
 ## Github Repo Link
 
-To link to your github **repo**sitory, appropriately edit the example link below. Meaning replace `https://your-github-repo-url` with your github repo url. Suggest verifying the link works before submitting.
-
 [https://github.com/stat301-2-2024-winter/final-project-2-idowling11](https://github.com/stat301-2-2024-winter/final-project-2-idowling11)
-
 :::
 
-::: {.callout-warning}
-GitHub (free account) cannot store large files. If you try to commit and push a large dataset you will have an ERROR! Any file over 100 MB (100,000 KB) needs to be added to the `.gitignore` file BEFORE committing.
+## Data source
 
-**We may need to do that for files in your final project!**
-:::
+Here is my data source: a link to a Kaggle dataset of National Basketball Association individual player statistics and salary data from 1950 to 2017. I am using the "Basic Season - Season Stats" sheet.^[Here is a --- [link](https://www.kaggle.com/datasets/whitefero/nba-players-advanced-season-stats-19782016) to the Kaggle page with the dataset.]
+
+My objective/motivation -- to predict player salary -- can be found in the README.md file.
+
+## Assessment Table
+
+My assessment metric is RMSE for the linear and null models I've fitted to the 15 folds I have, as shown in the table below.
+
+```{r}
+#| label: tbl-null-and-lm-metrics
+#| tbl-cap: "These are the RMSEs for the null and linear models fitted to the resamples."
+#| echo: false
+# generating assessment table
+load(here("results/nba_metrics_resamples_rmse.rda"))
+
+nba_metrics_resamples_rmse |>
+  knitr::kable()
+```
+
+## Analysis Plan
+
+Using 15 folds with an 80-20 training-testing data split, I plan to employ V-fold cross-validation. I'm looking to go with six model types: null and linear (fitted to folds here), ridge, random forest, nearest neighbor, and boosted tree, with tuned parameters for the latter four (as outlined in the R scripts folder). I'm using two recipes: a feature-engineered one and a kitchen sink one (with a few variable removals/extra steps in that latter one to allow the recipe to run). 
+
+I'll first fit each of those six models with those two recipes to the resamples once I tune the last four, then go from there to find the lowest RMSE for each model among the two recipes, and then directly compare the best results for each model to fit my best model to the entire training set.
+
+## Where I am
+
+I've fitted the two models -- null and linear -- to the kitchen sink recipe, which is fairly well-developed to make the fit run smoothly. I cleaned the dataset a little more, as well, in the pre-splitting stage. After some brief exploration, I observed that all of the missing values were found in percentage variables in which each respective player didn't attempt a shot (hence creating a 0 made shots on 0 attempts mark, which would create an undefined percentage --> stored as NA). Thus, instead of imputing in the recipe using the mean/median/model estimation, I just replaced the percentages with 0 before splitting. I'll probably justify this in an appendix, since there wasn't that much missingness (the worst case was about 15.7% of the cleaned set).
+
+Outside of that, one big thing to address is that there appears to be some rank-deficiency when running the kitchen sink recipe. I tried to take it away by adding a step_lincomb() step (I thought that having pairings such as number of shots made + number of attempts + percentage led to that), but I still received that warning. I got my metrics, but just something to keep in mind in revising my recipe and making the feature engineering one.
+
+I still have to explore my data further to come up with the interactions/transformations I'll be using in the feature-engineered recipe, which is probably the biggest challenge I have left. I'll look to finish that exploration and decide on the interactions for the second recipe by the middle of next week. From there, I can spend the final week fitting the models to the samples, and working from there to find the best model for each type before whittling down to comparing the six best. In that process, I'll identify revisions I can make to improve it.
 
 

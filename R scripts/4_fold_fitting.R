@@ -51,10 +51,15 @@ null_fit_folds <- null_workflow |>
   )
 
 
-nba_metrics_rmse <- bind_rows(lm_fit_folds |>
+nba_metrics_resamples_rmse <- bind_rows(lm_fit_folds |>
                                 collect_metrics() |>
                                 mutate(model = "OLS")) |>
   bind_rows(null_fit_folds |>
               collect_metrics() |>
               mutate(model = "Null")) |>
   filter(.metric == "rmse") 
+
+# saving resample fit
+save(nba_metrics_resamples_rmse, file = here("results/nba_metrics_resamples_rmse.rda"))
+
+
