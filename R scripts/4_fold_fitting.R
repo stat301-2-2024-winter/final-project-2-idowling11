@@ -14,47 +14,50 @@ load(here("data_splits/nba_train.rda"))
 load(here("data_splits/nba_test.rda"))
 load(here("data_splits/nba_folds.rda"))
 
-# load recipe
-load(here("recipes/nba_recipe_one_lm.rda"))
+# load recipes
+load(here("recipes/nba_recipe_one_tree.rda"))
+load(here("recipes/nba_recipe_one_nontree.rda"))
 
 # handle common conflicts
 tidymodels_prefer()
 
-# linear model specification, workflow
-lm_mod <- linear_reg(mode = "regression") |>
+# linear model kitchen sink specification, workflow
+lm_mod_kitchen <- linear_reg(mode = "regression") |>
   set_engine("lm")
 
-lm_workflow <- workflow() |>
-  add_model(lm_mod) |>
-  add_recipe(nba_recipe_one_lm)
+lm_workflow_kitchen <- workflow() |>
+  add_model(lm_mod_kitchen) |>
+  add_recipe(nba_recipe_one_nontree)
 
-# null baseline model specification, workflow
-null_spec <- null_model() |>
+# null baseline model kitchen sink specification, workflow
+null_spec_kitchen <- null_model() |>
   set_engine("parsnip") |>
   set_mode("regression") 
 
-null_workflow <- workflow() |> 
-  add_model(null_spec) |>
-  add_recipe(nba_recipe_one_lm)
+null_workflow_kitchen <- workflow() |> 
+  add_model(null_spec_kitchen) |>
+  add_recipe(nba_recipe_one_nontree)
+
+
 
 keep_pred <- control_resamples(save_pred = TRUE)
 
 # fit workflows/models ----
-lm_fit_folds <- fit_resamples(lm_workflow,
-                              resamples = nba_folds,
-                              control = keep_pred)
+lm_fit_folds_kitchen <- fit_resamples(lm_workflow_kitchen,
+                      resamples = nba_folds,
+                      control = keep_pred)
 
-null_fit_folds <- null_workflow |> 
+null_fit_folds_kitchen <- null_workflow_kitchen |> 
   fit_resamples(
     resamples = nba_folds, 
     control = control_resamples(save_workflow = TRUE)
   )
 
 
-nba_metrics_resamples_rmse <- bind_rows(lm_fit_folds |>
+nba_metrics_resamples_rmse <- bind_rows(lm_fit_folds_kitchen |>
                                 collect_metrics() |>
                                 mutate(model = "OLS")) |>
-  bind_rows(null_fit_folds |>
+  bind_rows(null_fit_folds_kitchen |>
               collect_metrics() |>
               mutate(model = "Null")) |>
   filter(.metric == "rmse") 

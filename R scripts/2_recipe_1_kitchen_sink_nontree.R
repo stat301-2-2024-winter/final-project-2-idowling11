@@ -23,16 +23,16 @@ set.seed(8)
 
 # LM/null recipe, kitchen sink
 nba_recipe_one_nontree <- recipe(log_10_player_salary ~ ., data = nba_train) |>
-  step_rm(player_name) |>
+  step_rm(player_name, player_salary) |>
   step_lincomb(all_numeric_predictors()) |>
   step_novel(pos, tm) |>
-  step_dummy(pos, tm, one_hot = TRUE) |>
+  step_dummy(pos, tm) |>
   step_zv(all_predictors()) |>
   step_nzv() |>
   step_normalize() 
 
-#prep(nba_recipe_one_nontree) |>
-  #bake(new_data = NULL)
+prep(nba_recipe_one_nontree) |>
+  bake(new_data = NULL)
 
 # saving recipes
 save(nba_recipe_one_nontree, file = here("recipes/nba_recipe_one_nontree.rda"))
