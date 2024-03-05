@@ -31,7 +31,12 @@ num_nba_values <- nba_train_eda |>
   select(where(is.numeric))
 
 correlation_log_salary <- cor(num_nba_values)
-corrplot::corrplot(correlation_log_salary, method = "color", tl.cex = 0.6)
+nba_corrplot <- corrplot::corrplot(correlation_log_salary, method = "color", tl.cex = 0.6)
+
+
+# looking at univariate distribution of potentially right-skewed variables
+nba_train_eda |>
+  
 
 # investigating relationship between games and games started
 nba_train_eda |>
@@ -51,9 +56,9 @@ nba_train_eda |>
   geom_point() +
   geom_smooth(method = "lm")
 
-# bpm used to calculate vorp --> potential interaction
+# bpm used to calculate vorp --> potential interaction (INCLUDE THIS as interaction)
 nba_train_eda |>
-  ggplot(aes(x = bpm, y = vorp)) +
+  ggplot(aes(x = bpm, y = log_10_player_salary, color = vorp)) +
   geom_point() +
   geom_smooth(method = "lm")
 
@@ -68,3 +73,7 @@ nba_train_eda |>
   ggplot(aes(x = ows, y = pts)) +
   geom_point() +
   geom_smooth(method = "lm")
+
+# saving EDA subset of training data and corr plot
+save(nba_train_eda, file = here("data_splits/nba_train_eda.rda"))
+save(nba_corrplot, file = here("results/nba_corrplot.rda"))
