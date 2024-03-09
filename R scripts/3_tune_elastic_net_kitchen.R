@@ -37,7 +37,7 @@ elastic_workflow <- workflow() |>
 
 # hyperparameter tuning values ----
 elastic_params <- extract_parameter_set_dials(elastic_model) |>
-  update(penalty = penalty(range = c(-10, 0)))
+  update(penalty = penalty(range = c(-10, -3)))
 
 elastic_grid <- grid_regular(elastic_params, levels = 5)
 

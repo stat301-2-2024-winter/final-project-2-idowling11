@@ -28,8 +28,8 @@ nba_recipe_one_nontree <- recipe(log_10_player_salary ~ ., data = nba_train) |>
   step_novel(pos, tm) |>
   step_dummy(pos, tm) |>
   step_zv(all_predictors()) |>
-  step_nzv() |>
-  step_normalize() 
+  step_nzv(all_predictors()) |>
+  step_normalize(all_numeric_predictors()) 
 
 prep(nba_recipe_one_nontree) |>
   bake(new_data = NULL)

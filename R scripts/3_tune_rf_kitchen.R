@@ -29,7 +29,8 @@ registerDoParallel(cl)
 #  model specifications ----
 rf_model <- rand_forest(mode = "regression",
                         min_n = tune(),
-                        mtry = tune()) |>
+                        mtry = tune(),
+                        trees = 1000) |>
   set_engine("ranger")
 
 # define workflows ----
@@ -39,9 +40,9 @@ rf_workflow <- workflow() |>
 
 # hyperparameter tuning values ----
 rf_params <- extract_parameter_set_dials(rf_model) |>
-  update(mtry = mtry(range = c(1, 51)))
+  update(mtry = mtry(range = c(1, 16)))
 
-rf_grid <- grid_random(rf_params, size = 20)
+rf_grid <- grid_regular(rf_params, levels = 5)
 
 # fit workflows/models ----
 tuned_rf_kitchen <- tune_grid(rf_workflow,

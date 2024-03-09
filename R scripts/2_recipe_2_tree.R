@@ -1,0 +1,48 @@
+# Recipe 2: Feature-engineered recipe: non-parametric
+
+# load packages
+library(tidyverse)
+library(tidymodels)
+library(here)
+library(patchwork)
+library(janitor)
+library(skimr)
+library(ggplot2)
+
+# load data split and folds
+load(here("data_splits/nba_split.rda"))
+load(here("data_splits/nba_train.rda"))
+load(here("data_splits/nba_test.rda"))
+load(here("data_splits/nba_folds.rda"))
+
+# handle common conflicts
+tidymodels_prefer()
+
+# set seed
+set.seed(8)
+
+# feature-engineered recipe
+nba_recipe_two_tree <- recipe(log_10_player_salary ~ ., data = nba_train) |>
+  step_rm(player_name, player_salary, number, stl_percent, x3p_ar, f_tr,
+          orb_percent, drb_percent, trb_percent, blk_percent, tov_percent, pf) |>
+  step_sqrt(ast_percent, usg_percent, fg, fga, x3p, x3pa, x2p, x2pa,
+            ft, fta, stl, pts) |>
+  step_YeoJohnson(ows, dws, ws, vorp, per, x3p_percent, ft_percent, blk) |>
+  step_dummy(all_nominal_predictors(), one_hot = TRUE) |>
+  step_interact(~fg:pts) |>
+  step_interact(~e_fg_percent:ts_percent) |>
+  step_interact(~starts_with("tm"):ws) |>
+  step_interact(~orb:trb) |>
+  step_interact(~fga:fg) |>
+  step_interact(~g:mp) |>
+  step_ns(age) |>
+  step_lincomb(all_numeric_predictors()) |>
+  step_zv(all_predictors()) |>
+  step_nzv(all_predictors()) |>
+  step_normalize(all_numeric_predictors()) 
+
+prep(nba_recipe_two_tree) |>
+  bake(new_data = NULL)
+
+# saving recipes
+save(nba_recipe_two_tree, file = here("recipes/nba_recipe_two_tree.rda"))

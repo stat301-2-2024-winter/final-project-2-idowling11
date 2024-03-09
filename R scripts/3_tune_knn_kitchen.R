@@ -43,7 +43,6 @@ knn_workflow <- workflow() |>
 
 # hyperparameter tuning values ----
 knn_params <- extract_parameter_set_dials(knn_model) 
-
 knn_grid <- grid_regular(knn_params, levels = 5)
 
 # fit workflows/models ----
