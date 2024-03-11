@@ -42,6 +42,11 @@ nba_train_eda |>
   geom_smooth(method = "lm") +
   facet_wrap(~tm) 
 
+nba_train_eda |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_histogram() +
+  facet_wrap(~tm)
+
 # field goals and points
 nba_train_eda |>
   ggplot(aes(x = fg, y = log_10_player_salary, color = pts)) +

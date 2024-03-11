@@ -40,7 +40,7 @@ rf_workflow <- workflow() |>
 
 # hyperparameter tuning values ----
 rf_params <- extract_parameter_set_dials(rf_model) |>
-  update(mtry = mtry(range = c(1, 16)))
+  update(mtry = mtry(range = c(1, 7)))
 
 rf_grid <- grid_regular(rf_params, levels = 5)
 

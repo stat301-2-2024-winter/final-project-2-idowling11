@@ -8,7 +8,7 @@ library(patchwork)
 library(janitor)
 library(skimr)
 library(ggplot2)
-
+# Recipe 2: Feature-engineered recipe: non-parametric
 # load data split and folds
 load(here("data_splits/nba_split.rda"))
 load(here("data_splits/nba_train.rda"))

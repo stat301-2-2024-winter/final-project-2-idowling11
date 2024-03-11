@@ -28,14 +28,18 @@ nba_recipe_two_nontree <- recipe(log_10_player_salary ~ ., data = nba_train) |>
   step_sqrt(ast_percent, usg_percent, fg, fga, x3p, x3pa, x2p, x2pa,
             ft, fta, stl, pts) |>
   step_YeoJohnson(ows, dws, ws, vorp, per, x3p_percent, ft_percent, blk) |>
+  step_novel(all_nominal_predictors()) |>
   step_dummy(all_nominal_predictors()) |>
+  step_interact(~starts_with("tm"):ws) |>
   step_interact(~fg:pts) |>
   step_interact(~e_fg_percent:ts_percent) |>
-  step_interact(~starts_with("tm"):ws) |>
+  step_interact(~ows:ws) |>
+  step_interact(~dws:ws) |>
   step_interact(~orb:trb) |>
+  step_interact(~drb:trb) |>
   step_interact(~fga:fg) |>
   step_interact(~g:mp) |>
-  step_ns(age) |>
+  step_ns(age, deg_free = 10) |>
   step_lincomb(all_numeric_predictors()) |>
   step_zv(all_predictors()) |>
   step_nzv(all_predictors()) |>
