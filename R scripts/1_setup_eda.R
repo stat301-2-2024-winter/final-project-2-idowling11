@@ -33,6 +33,30 @@ num_nba_values <- nba_train_eda |>
 correlation_log_salary <- cor(num_nba_values)
 nba_corrplot <- corrplot::corrplot(correlation_log_salary, method = "color", tl.cex = 0.6)
 
+## target variable distribution ----
+nba_train_eda |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_density(fill = "skyblue") +
+  labs(title = "Exploring Player Salary (log transformed)",
+       x = "Player Salary, log-transformed")
+
+## categorical variable distribution ----
+## position
+nba_train_eda |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_density(fill = "skyblue") +
+  facet_wrap(~pos) +
+  labs(title = "Exploring Player Salary by Position", 
+       x = "Player Salary, log-transformed")
+
+## team
+nba_train_eda |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_density(fill = "skyblue") +
+  facet_wrap(~tm) +
+  labs(title = "Exploring Player Salary by Team", 
+       x = "Player Salary, log-transformed")
+
 # potential interactions ----
 
 # teams and win shares
@@ -42,10 +66,13 @@ nba_train_eda |>
   geom_smooth(method = "lm") +
   facet_wrap(~tm) 
 
+# ast and position?
 nba_train_eda |>
-  ggplot(aes(x = log_10_player_salary)) +
-  geom_histogram() +
-  facet_wrap(~tm)
+  ggplot(aes(x = sqrt(ast), y = log_10_player_salary)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  facet_wrap(~pos) 
+
 
 # field goals and points
 nba_train_eda |>
@@ -64,6 +91,11 @@ nba_train_eda |>
 # offensive and total rebounds
 nba_train_eda |>
   ggplot(aes(x = sqrt(orb), y = log_10_player_salary, color = sqrt(trb))) +
+  geom_point()
+
+# defensive and total rebounds
+nba_train_eda |>
+  ggplot(aes(x = sqrt(drb), y = log_10_player_salary, color = sqrt(trb))) +
   geom_point()
 
 # fg and fga 
@@ -307,4 +339,4 @@ nba_train_eda |>
 
 # saving EDA subset of training data and corr plot
 save(nba_train_eda, file = here("data_splits/nba_train_eda.rda"))
-save(nba_corrplot, file = here("results/nba_corrplot.rda"))
+save(nba_corrplot, file = here("plots/nba_corrplot.rda"))

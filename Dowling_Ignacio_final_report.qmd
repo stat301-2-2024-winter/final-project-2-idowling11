@@ -1,0 +1,243 @@
+---
+title: "Final Report"
+subtitle: |
+  | Final Project 
+  | Data Science 2 with R (STAT 301-2)
+author: "Ignacio Dowling"
+date: today
+
+format:
+  html:
+    toc: true
+    embed-resources: true
+    
+execute:
+  warning: false
+
+from: markdown+emoji 
+reference-location: margin
+citation-location: margin
+---
+
+```{r}
+#| echo: false
+# loading packages
+library(tidyverse)
+library(tidymodels)
+library(here)
+library(patchwork)
+library(janitor)
+library(skimr)
+library(ggplot2)
+library(dplyr)
+library(splines)
+```
+
+
+::: {.callout-tip icon=false}
+## Github Repo Link
+
+[https://github.com/stat301-2-2024-winter/final-project-2-idowling11](https://github.com/stat301-2-2024-winter/final-project-2-idowling11)
+:::
+
+## Introduction
+
+I created a model that predicts an NBA player's yearly salary based on their age, team, role, season, and the dozens of other season statistics in my dataset (described below). Ultimately, I looked to determine an NBA player's "deserved" salary based on the various factors and statistics listed in that set, which is a regression problem. The variable I'm trying to predict is player_salary_in, which I renamed to player_salary. To do so, I log-10-transformed that target variable, as described in further detail in the data overview section.
+
+The data comes from a Kaggle dataset of National Basketball Association individual player statistics and salary data from 1950 to 2017. I am using the "Basic Season - Season Stats" sheet.^[Here is a --- [link to that](https://www.kaggle.com/datasets/whitefero/nba-players-advanced-season-stats-19782016) to the Kaggle page with the dataset.] As stated above, my outcome variable is player_salary_in.
+
+This raw dataset has 24,625 observations and 54 variables (2 of which are blank). 12 of the other 52 are categorical and 42 of which are numerical. These observations contain statistical information about each individual player's season, statistics, and their yearly salary with a particular team.
+
+As I cleaned the dataset, I modified the columns and adjusted for missingness, leaving me with 10,977 observations, 50 numeric variables and three categorical ones.
+
+I'm interested in the NBA, and thought this would be fun. Fans constantly bicker about different players' values, especially ones that are considered overpaid and ones that are underpaid. Finding a diamond in the rough (or vice versa) greatly impacts roster construction, which of course impacts game results. A prediction model would take much  more into account beyond comparing a salary amount to other players in the league at a given time, and would give someone a much better idea of whether a player met their contract demands in a given year.
+
+## Data Overview
+
+### Examining Missingness for Dataset
+
+Here is a look at the missingness for the raw dataset, with a very small amount of cleaning for the variable names. I only included variables with more than 5% missingness; those not included (29 of the 54) have less than 5% missingness.
+
+```{r}
+#| label: tbl-raw-missingness-data
+#| tbl-cap: "Examining Variable Missingness in Raw NBA Dataset"
+#| echo: false
+# reading in data 
+nba_season_statistics <- read_csv(here("data/nba_season_statistics.csv"))
+
+# checking missingness
+nba_season_statistics |>
+  skim() |>
+  select(skim_variable, n_missing, complete_rate) |>
+  arrange(desc(n_missing)) |>
+  filter(complete_rate < .95) |>
+  knitr::kable(col.names = c("Variable Name", "Number of Observations Missing", 
+                             "Rate of Observations Not Missing"))
+```
+
+Obviously, there's some missingness, though the only thing massive here is that of the target variable, which I'll expand on in the following section. Even x3p_percent, which records the three-point percentage of different players, isn't especially bad missingness since the NBA's three-point line wasn't invented until 1979, 29 years after the earliest recorded observation in this dataset. Let's dive into the target variable, though:
+
+### Examining Missingness for Target Variable and Cleaned Dataset
+
+Without cleaning, here's what the missingness and distribution of the target variable in the dataset looked like after very preliminary cleaning (i.e. cleaning variable names):
+
+```{r}
+#| label: tbl-raw-missingness-target
+#| tbl-cap: "Examining Original Salary Variable Missingness"
+#| echo: false
+# reading in data 
+nba_season_statistics <- read_csv(here("data/nba_season_statistics.csv"))
+
+# checking missingness
+nba_season_statistics |>
+  skim(player_salary) |>
+  select(n_missing, complete_rate) |>
+  knitr::kable(col.names = c("Number of Observations Missing", "Rate of Observations Not Missing"))
+
+```
+
+It's clear that there's significant missingness in the original dataset for salary; over 55% of the observations do not include a player's salary. After some further exploration and cleaning, I identified that this was because salaries for seasons before 1990 were not recorded in this dataset. Thus, in cleaning the dataset (those steps can be found in the R Scripts folder), I filtered those out to only explore observations with seasons 1990 or later. After doing so, this is what the missingness looked like:
+
+```{r}
+#| label: tbl-cleaned-missingness
+#| tbl-cap: "Examining Salary Variable Missingness for 1990-2017"
+#| echo: false
+# reading in data 
+nba_season_statistics_cleaned <- read_csv(here("data/nba_season_statistics_cleaned.csv"))
+
+# checking missingness
+nba_season_statistics_cleaned |>
+  skim(player_salary) |>
+  select(n_missing, complete_rate) |>
+  knitr::kable(col.names = c("Number of Observations Missing", "Rate of Observations Not Missing"))
+```
+
+And, here's that of the entire cleaned dataset (10,852 observations):
+
+```{r}
+#| label: tbl-cleaned-missingness-data
+#| tbl-cap: "Examining Variable Missingness: 1990-2017"
+#| echo: false
+
+# checking missingness
+nba_season_statistics_cleaned |>
+  skim() |>
+  select(skim_variable, n_missing, complete_rate) |>
+  arrange(desc(n_missing)) |>
+  knitr::kable(col.names = c("Variable Name", "Number of Observations Missing", 
+                             "Rate of Observations Not Missing"))
+```
+
+
+Perfect! No missingness at all. However, what is of note is that there were NA values in the original dataset for some shooting percentage variables. For players who had not taken a certain type of shot, their percentage for that attempt category led to a "divide by 0" situation, which brought about an NA. I replaced those NAs with 0s in the cleaning, given those players had not taken a single shot (not exactly, but essentially shooting 0%). 
+
+Now let's take a look at potential categorical imbalance after cleaning the dataset:
+
+### Examining Categorical Data Balance
+
+The three categorical variables here are player names, player positions, and player teams. The former is obviously balanced with thousands of different values, as there have been thousands of different NBA players since 1990.
+
+Let's start with distribution of different basketball player positions: 
+```{r}
+#| label: tbl-position-distribution
+#| tbl-cap: "Examining Basketball Position Frequency for 1990-2017"
+#| echo: false
+nba_season_statistics_cleaned <- read_csv(here("data/nba_season_statistics_cleaned.csv"))
+
+nba_season_statistics_cleaned |>
+  group_by(pos) |>
+  tally() |>
+  arrange(desc(n)) |>
+  knitr::kable(col.names = c("Position", "Frequency"))
+```
+The five primary positions -- power forward (PF), point guard (PG), center (C), shooting guard (SG), and small forward (SF) -- all appear to be reasonably balanced when it comes to frequency.
+
+There were a few hybrids of very small frequency (i.e. point guard/small forwards, etc., fewer than 20), which I cut in the cleaning to evaluate the five actual positions.
+
+Let's look at teams, our other variable.
+
+```{r}
+#| label: tbl-team-distribution
+#| tbl-cap: "Examining Basketball Team Frequency for 1990-2017"
+#| echo: false
+nba_season_statistics_cleaned <- read_csv(here("data/nba_season_statistics_cleaned.csv"))
+
+nba_season_statistics_cleaned |>
+  group_by(tm) |>
+  tally() |>
+  arrange(desc(n)) |>
+  knitr::kable(col.names = c("Team Name", "Frequency"))
+```
+
+Likewise, this appears to be relatively balanced, especially for there being around 35 different levels. 
+
+## Exploring the Target Variable
+
+Let's start with a univariate analysis, and look at a histogram of salaries in the NBA from 1990-2017:
+
+```{r}
+#| label: fig-1
+#| fig-cap:  "Distribution of NBA Salaries: 1990-2017"
+#| echo: false
+
+# univariate distribution of salary
+nba_season_statistics_cleaned |>
+  ggplot(aes(x = player_salary)) +
+  geom_histogram(color = "white") +
+  labs(x = "Player Salary ($)", y = "Count")
+```
+
+The data is heavily right-skewed, with most players making less than $5 million in a year. It makes sense; most players aren't elite, and therefore the vast majority of players do not make anywhere near as much money as the most elite stars. With 15 players to pay and 5 players on a court at once (allowing for more individual impact than in other team sports), often one or two players on a team make more or as much as multiple other ones combined.
+
+To combat that skew, it'd be helpful to log-transform this data to reduce this skewness and make the distribution more normal. Thus, I applied a log-10 transformation to the variable. Here's what the new distribution looked like:
+
+```{r}
+#| label: fig-2
+#| fig-cap:  "Distribution of NBA Salaries (log-transformed): 1990-2017"
+#| echo: false
+
+# univariate distribution of log-transformed salary
+nba_season_statistics_cleaned |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_histogram(color = "white") +
+  labs(x = "Player Salary (Log-Transformed $)", y = "Count")
+```
+While not perfect (there appears to be a slight left skew), this distribution is much closer to normal than the first one. On this scale, most players fall in between roughly 5.7 and 6.7 here, which is still a lot of money relative to the average person.
+
+Below are some additional statistics for the log-transformed variable:
+
+```{r}
+#| label: tbl-log-salary-skim
+#| tbl-cap: "Log-10 Salary Summary Statistics"
+#| echo: false
+nba_season_statistics_cleaned |>
+  skim() |>
+  filter(skim_variable == "log_10_player_salary") |>
+  select(skim_variable, numeric.mean, numeric.sd, numeric.p0, numeric.p50, numeric.p100) |>
+  mutate(variable = skim_variable) |>
+  mutate(mean = numeric.mean) |>
+  mutate(sd = numeric.sd) |>
+  mutate(min = numeric.p0) |>
+  mutate(median = numeric.p50) |>
+  mutate(max = numeric.p100) |>
+  select(variable, mean, sd, min, median, max) |>
+  knitr::kable(caption = "Log-10 Salary Summary Statistics")
+```
+
+As stated above, the minimum value is relatively high, well over 3 here. The mean and median are somewhat close to another, as well, while the max is a little more than 2 standard deviations from the median of $6.34 (log-transformed).
+
+Further relationships of the predictors (and ensuing transformations) with the log-transformed target variable of salary can be found in the EDA Appendix. 
+
+## Methods
+
+### Data Splitting
+
+This is a regression problem. To begin, I split my cleaned dataset of 10,852 observations into training and testing data. Approximately 80% of the dataset -- or 8.679 observations were a part of the training set, while the other 20% -- or the other 2,173 observations -- went into the testing set. I also used 50% of the training dataset (4,339 observations) for EDA.
+
+### Model Types and Parameters
+
+I will fit six different models.
+
+The first is my baseline model: a null one.
+
+

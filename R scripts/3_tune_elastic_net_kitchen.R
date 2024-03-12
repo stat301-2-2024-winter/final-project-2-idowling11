@@ -36,8 +36,7 @@ elastic_workflow <- workflow() |>
   add_recipe(nba_recipe_one_nontree)
 
 # hyperparameter tuning values ----
-elastic_params <- extract_parameter_set_dials(elastic_model) |>
-  update(penalty = penalty(range = c(-10, -3)))
+elastic_params <- extract_parameter_set_dials(elastic_model) 
 
 elastic_grid <- grid_regular(elastic_params, levels = 5)
 

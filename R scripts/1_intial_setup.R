@@ -45,9 +45,10 @@ nba_season_statistics_cleaned <- nba_season_statistics |>
 nba_season_statistics_cleaned <- nba_season_statistics_cleaned |>
   filter(player_salary != "NA")
 
-# saving cleaned target variable dataset
-write_csv(nba_season_statistics_cleaned, file = here("data/nba_season_statistics_cleaned.csv"))
-
+# ensuring the 5 primary positions are measured
+nba_season_statistics_cleaned <- nba_season_statistics_cleaned |>
+  filter(pos == "C" | pos == "PF" | pos == "SF" | pos == "SG" |
+           pos == "PG")
 
 # Finding initial distribution and log-transforming
 nba_season_statistics_cleaned |>
@@ -79,7 +80,11 @@ nba_season_statistics_cleaned |>
   scale_x_log10()
   labs(title = "Distribution of NBA Player Yearly Salary: Log-Transformed")
 
-
+  
+  
+# saving cleaned target variable dataset
+write_csv(nba_season_statistics_cleaned, file = here("data/nba_season_statistics_cleaned.csv"))
+  
 # splitting data
 nba_split <- initial_split(nba_season_statistics_cleaned, prop = 0.8, 
                            strata = log_10_player_salary)

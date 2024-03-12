@@ -26,13 +26,15 @@ nba_recipe_two_tree <- recipe(log_10_player_salary ~ ., data = nba_train) |>
   step_rm(player_name, player_salary, number, stl_percent, x3p_ar, f_tr,
           orb_percent, drb_percent, trb_percent, blk_percent, tov_percent, pf) |>
   step_sqrt(ast_percent, usg_percent, fg, fga, x3p, x3pa, x2p, x2pa,
-            ft, fta, stl, pts) |>
+            ft, fta, stl, pts, trb, orb, drb) |>
   step_YeoJohnson(ows, dws, ws, vorp, per, x3p_percent, ft_percent, blk) |>
   step_novel(all_nominal_predictors()) |>
   step_dummy(all_nominal_predictors(), one_hot = TRUE) |>
+  step_interact(~starts_with("pos"):ast) |>
   step_interact(~starts_with("tm"):ws) |>
   step_interact(~fg:pts) |>
   step_interact(~e_fg_percent:ts_percent) |>
+  step_interact(~x2p_percent:e_fg_percent) |>
   step_interact(~ows:ws) |>
   step_interact(~dws:ws) |>
   step_interact(~orb:trb) |>
