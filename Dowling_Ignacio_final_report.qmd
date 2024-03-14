@@ -1,5 +1,5 @@
 ---
-title: "Final Report"
+title: "Predicting Yearly Salary for NBA Players: 1990-2017"
 subtitle: |
   | Final Project 
   | Data Science 2 with R (STAT 301-2)
