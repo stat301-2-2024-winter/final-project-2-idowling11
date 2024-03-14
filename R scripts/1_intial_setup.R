@@ -57,8 +57,8 @@ nba_season_statistics_cleaned |>
 
 # log-transforming player_salary and making missing values 0
 
-# after minor missingness exploration, missing values are percentages and come 
-# as a result of no shots attempted --> 0/0 listed as NA
+# missing values are percentages and come as a result of no shots attempted
+# thus 0/0 listed as NA
 nba_season_statistics_cleaned <- nba_season_statistics_cleaned |>
   mutate(log_10_player_salary = log10(player_salary)) |>
   mutate(ts_percent = ifelse(is.na(ts_percent), 0, ts_percent),

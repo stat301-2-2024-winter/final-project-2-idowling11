@@ -1,0 +1,40 @@
+---
+title: "Executive Summary"
+subtitle: |
+  | Final Project 
+  | Data Science 2 with R (STAT 301-2)
+author: "Ignacio Dowling"
+date: today
+
+format:
+  html:
+    toc: true
+    embed-resources: true
+    
+from: markdown+emoji 
+---
+::: {.callout-tip icon=false}
+
+## Github Repo Link
+
+[https://github.com/stat301-2-2024-winter/final-project-2-idowling11](https://github.com/stat301-2-2024-winter/final-project-2-idowling11)
+
+
+:::
+
+## Purpose
+
+This model attempts to predict an NBA player's yearly salary based on their age, team, role, season, and dozens of other season statistics. General managers and team executives are constantly looking to find value in good players, and teams that can underpay great ones while staying away from overpaying overrated ones will very likely succeed. That makes identifying a player's deserved salary especially important.
+
+Using a slew of statistics and categorical factors, this model examines what a "deserved" salary is based on its predictions. While teams' decisions to overpay and underpay certain players may lead to faulty predictions in some cases, this model looks to make progress toward answering questions about whether certain players may have met their contract demands in a certain year.
+
+## Major Results
+
+Of the 12 models I built to predict log-10-transformed salary, I determined that my random forest model with a recipe in which I threw in essentially every available was the best-performing model, after using RMSE to evaluate all 12. After its final fit, its mean root mean squared error in predicting salary was about .34 (in log-10 units), which is somewhat moderate. Much of this variance between observed values and the predictions appeared to occur with higher salaries. The model's ideal hyperparameters were 7 randomly sampled predictors, and a minimal node size of 2 observations. There was a moderately strong relationship between the observed values and the predicted ones.
+
+In fitting, plotting, and examining the predicted values against the observed values, I determined that many players with contracts north of $10 million per year were being paid higher salaries than what the model predicted. That's likely a combination both of room for improvement in the model and the possibility that teams have overpaid players relative to what their value in a year should be.
+
+In getting to that step, a thorough EDA uncovered that some newly-created percentage stats that don't count shooting -- assist percentage, rebound percentage, steal percentage, block percentage, and turnover percentage among them -- have virtually no relationship with a player's salary. Additionally, high three-point attempt and free throw rates aren't great indicators of salary (deserved nor observed), either. Additionally, as expected, player salaries have gone up every five years, on average, which I considered in developing the predictive models. That's largely due to a rising salary cap.
+
+Ultimately, these are a few of the biggest conclusions I reached in building these 12 models, which can serve as a jumping-off point for honing in on whether players who made a ton of money in a given year were overpaid (or it's merely difficult to predict). 
+
