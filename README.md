@@ -49,6 +49,7 @@ types
 
 ## Reports
 
-- `L06_model_tuning`: instructions for lab
-- `Dowling_Ignacio_L06.qmd`: final report of lab
-- `Dowling_Ignacio_LO5.html`: rendered file with final solutions
+- `Dowling_Ignacio_final_report.qmd`: final report for project
+- `Dowling_Ignacio_final_report.html`: rendered file with printed report
+- `Dowling_Ignacio_executive_summary.qmd`: concise executive summary of final report, displaying purpose and major results
+- `Dowling_Ignacio_executive_summary.html`: rendered file with executive summary of report
