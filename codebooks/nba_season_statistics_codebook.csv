@@ -1,0 +1,56 @@
+variables,descriptions
+number,ID Number
+season_start,Year
+player_name,player name
+player_salary,Player salary that year in $
+pos,Position
+age,Age
+tm,Team
+g,Games Played
+gs,Games started
+mp,Minutes played
+per,Player Efficiency Rating
+ts_percent,True shooting percentage
+x3p_ar,Three-point attempt rate
+f_tr,Free throw attempt rate
+orb_percent,Offensive rebounding percentage
+drb_percent,Defensive rebounding percentage
+trb_percent,Total rebounding percentage
+ast_percent,Assist percentage
+stl_percent,Steal percentage
+blk_percent,Block percentage
+tov_percent,Turnover percentage
+usg_percent,Usage percentage
+blanl,Blank variable
+ows,Offensive win shares
+dws,Defensive win shares
+ws,Win shares
+ws_48,Win shares per 48 minutes
+blank2,Blank variable
+obpm,Offensive box plus-minus
+dbpm,Defensive box plus-minus
+bpm,Total box plus-minus
+vorp,Value over replacement player
+fg,Field goal shots made
+fga,Field goals attempted
+fg_percent,Field goal percentage
+x3p,Three-pointers made
+x3pa,Three-pointers attempted
+x3p_percent,Three-point percentage
+x2p_percent,Two-pointers made
+x2pa,Two-pointers attempted
+x2p_percent,Two-point percentage
+e_fg_percent,"Effective field goal percentage (weighting three-pointers as 1.5 times 
+                   a two-pointer)"
+ft,Free throws made
+fta,Free throws attempted
+ft_percent,Free throw percentage
+orb,Offensive rebounds
+drb,Defensive rebounds
+trb,Total rebounds
+ast,Assists
+stl,Steals
+blk,Blocks
+tov,Turnovers
+pf,Personal fouls
+pts,Points

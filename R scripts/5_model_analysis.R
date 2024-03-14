@@ -59,7 +59,7 @@ tbl_bt_kitchen <- tuned_bt_kitchen |>
   show_best("rmse") |>
   slice_min(mean) |>
   mutate(model = "Boosted Tree, kitchen sink recipe") |>
-  select(model, mtry, min_n, mean, n, std_err) 
+  select(model, mtry, min_n, learn_rate, mean, n, std_err) 
 
 tbl_elastic_kitchen <- tuned_elastic_kitchen |> 
   show_best("rmse") |>
@@ -97,7 +97,7 @@ tbl_bt_fe <- tuned_bt_fe |>
   show_best("rmse") |>
   slice_min(mean) |>
   mutate(model = "Boosted Tree, feature-engineered recipe") |>
-  select(model, mtry, min_n, mean, n, std_err) 
+  select(model, mtry, min_n, learn_rate, mean, n, std_err) 
 
 tbl_elastic_fe <- tuned_elastic_fe |> 
   show_best("rmse") |>

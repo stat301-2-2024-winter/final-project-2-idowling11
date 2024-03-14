@@ -24,14 +24,14 @@ set.seed(8)
 # feature-engineered recipe
 nba_recipe_two_nontree <- recipe(log_10_player_salary ~ ., data = nba_train) |>
   step_rm(player_name, player_salary, number, stl_percent, x3p_ar, f_tr,
-          orb_percent, drb_percent, trb_percent, blk_percent, tov_percent, pf) |>
-  step_sqrt(ast_percent, usg_percent, fg, fga, x3p, x3pa, x2p, x2pa,
-            ft, fta, stl, pts, trb, drb, orb) |>
-  step_YeoJohnson(ows, dws, ws, vorp, per, x3p_percent, ft_percent, blk) |>
+          orb_percent, drb_percent, trb_percent, blk_percent, tov_percent, pf, tm) |>
+  step_mutate(ft_percent = ft_percent^2) |>
+  step_sqrt(ast_percent, fg, fga, x2p, x2pa, ft, fta, stl, pts, trb, drb, orb) |>
+  step_YeoJohnson(ows, dws, ws, vorp, per, x3pa, x3p, x3p_percent, blk) |>
+  step_cut(season_start, breaks = c(1990, 1995, 2000, 2005, 2010, 2015)) |>
   step_novel(all_nominal_predictors()) |>
   step_dummy(all_nominal_predictors()) |>
   step_interact(~starts_with("pos"):ast) |>
-  step_interact(~starts_with("tm"):ws) |>
   step_interact(~fg:pts) |>
   step_interact(~e_fg_percent:ts_percent) |>
   step_interact(~x2p_percent:e_fg_percent) |>
@@ -41,7 +41,7 @@ nba_recipe_two_nontree <- recipe(log_10_player_salary ~ ., data = nba_train) |>
   step_interact(~drb:trb) |>
   step_interact(~fga:fg) |>
   step_interact(~g:mp) |>
-  step_ns(age, deg_free = 10) |>
+  step_ns(age, deg_free = 3) |>
   step_lincomb(all_numeric_predictors()) |>
   step_zv(all_predictors()) |>
   step_nzv(all_predictors()) |>

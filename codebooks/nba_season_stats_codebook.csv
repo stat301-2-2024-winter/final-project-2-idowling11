@@ -1,0 +1,56 @@
+variables,descriptions
+#,ID Number
+Season Start,Year
+Player Name,player name
+Player Salary in $,Player salary that year in $
+Pos,Position
+Age,Age
+Tm,Team
+G,Games Played
+GS,Games started
+MP,Minutes played
+PER,Player Efficiency Rating
+TS%,True shooting percentage
+3PAr,Three-point attempt rate
+FTr,Free throw attempt rate
+ORB%,Offensive rebounding percentage
+DRB%,Defensive rebounding percentage
+TRB%,Total rebounding percentage
+AST%,Assist percentage
+STL%,Steal percentage
+BLK%,Block percentage
+TOV%,Turnover percentage
+USG%,Usage percentage
+blanl,Blank variable
+OWS,Offensive win shares
+DWS,Defensive win shares
+WS,Win shares
+WS/48,Win shares per 48 minutes
+blank2,Blank variable
+OBPM,Offensive box plus-minus
+DBPM,Defensive box plus-minus
+BPM,Total box plus-minus
+VORP,Value over replacement player
+FG,Field goal shots made
+FGA,Field goals attempted
+FG%,Field goal percentage
+3P,Three-pointers made
+3PA,Three-pointers attempted
+3P%,Three-point percentage
+2P,Two-pointers made
+2PA,Two-pointers attempted
+2P%,Two-point percentage
+eFG%,"Effective field goal percentage (weighting three-pointers as 1.5 times 
+                   a two-pointer)"
+FT,Free throws made
+FTA,Free throws attempted
+FT%,Free throw percentage
+ORB,Offensive rebounds
+DRB,Defensive rebounds
+TRB,Total rebounds
+AST,Assists
+STL,Steals
+BLK,Blocks
+TOV,Turnovers
+PF,Personal fouls
+PTS,Points

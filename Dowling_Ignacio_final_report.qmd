@@ -31,6 +31,7 @@ library(skimr)
 library(ggplot2)
 library(dplyr)
 library(splines)
+library(knitr)
 ```
 
 
@@ -48,15 +49,15 @@ The data comes from a Kaggle dataset of National Basketball Association individu
 
 This raw dataset has 24,625 observations and 54 variables (2 of which are blank). 12 of the other 52 are categorical and 42 of which are numerical. These observations contain statistical information about each individual player's season, statistics, and their yearly salary with a particular team.
 
-As I cleaned the dataset, I modified the columns and adjusted for missingness, leaving me with 10,977 observations, 50 numeric variables and three categorical ones.
+As I cleaned the dataset, I modified the columns and adjusted for missingness, leaving me with 10,852 observations, 50 numeric variables and three categorical ones.
 
 I'm interested in the NBA, and thought this would be fun. Fans constantly bicker about different players' values, especially ones that are considered overpaid and ones that are underpaid. Finding a diamond in the rough (or vice versa) greatly impacts roster construction, which of course impacts game results. A prediction model would take much  more into account beyond comparing a salary amount to other players in the league at a given time, and would give someone a much better idea of whether a player met their contract demands in a given year.
 
 ## Data Overview
 
-### Examining Missingness for Dataset
+### Examining Missingness for Raw Dataset
 
-Here is a look at the missingness for the raw dataset, with a very small amount of cleaning for the variable names. I only included variables with more than 5% missingness; those not included (29 of the 54) have less than 5% missingness.
+Here is a look at the missingness for the raw dataset in @tbl-raw-missingness-data, with a very small amount of cleaning for the variable names. I only included variables with more than 5% missingness; those not included (29 of the 54) have less than 5% missingness.
 
 ```{r}
 #| label: tbl-raw-missingness-data
@@ -79,7 +80,7 @@ Obviously, there's some missingness, though the only thing massive here is that 
 
 ### Examining Missingness for Target Variable and Cleaned Dataset
 
-Without cleaning, here's what the missingness and distribution of the target variable in the dataset looked like after very preliminary cleaning (i.e. cleaning variable names):
+@tbl-raw-missingness-target displays what the missingness and distribution of the target variable in the dataset looked like after very preliminary cleaning (i.e. cleaning variable names):
 
 ```{r}
 #| label: tbl-raw-missingness-target
@@ -96,7 +97,7 @@ nba_season_statistics |>
 
 ```
 
-It's clear that there's significant missingness in the original dataset for salary; over 55% of the observations do not include a player's salary. After some further exploration and cleaning, I identified that this was because salaries for seasons before 1990 were not recorded in this dataset. Thus, in cleaning the dataset (those steps can be found in the R Scripts folder), I filtered those out to only explore observations with seasons 1990 or later. After doing so, this is what the missingness looked like:
+It's clear that there's significant missingness in the original dataset for salary; over 55% of the observations do not include a player's salary. After some further exploration and cleaning, I identified that this was because salaries for seasons before 1990 were not recorded in this dataset. Thus, in cleaning the dataset (those steps can be found in the R Scripts folder), I filtered those out to only explore observations with seasons 1990 or later. After doing so, @tbl-cleaned-missingness shows what the missingness looked like:
 
 ```{r}
 #| label: tbl-cleaned-missingness
@@ -112,22 +113,7 @@ nba_season_statistics_cleaned |>
   knitr::kable(col.names = c("Number of Observations Missing", "Rate of Observations Not Missing"))
 ```
 
-And, here's that of the entire cleaned dataset (10,852 observations):
-
-```{r}
-#| label: tbl-cleaned-missingness-data
-#| tbl-cap: "Examining Variable Missingness: 1990-2017"
-#| echo: false
-
-# checking missingness
-nba_season_statistics_cleaned |>
-  skim() |>
-  select(skim_variable, n_missing, complete_rate) |>
-  arrange(desc(n_missing)) |>
-  knitr::kable(col.names = c("Variable Name", "Number of Observations Missing", 
-                             "Rate of Observations Not Missing"))
-```
-
+And, the entire cleaned dataset (10,852 observations) has no missingess. That evidence can be found in @tbl-cleaned-missingness-data:
 
 Perfect! No missingness at all. However, what is of note is that there were NA values in the original dataset for some shooting percentage variables. For players who had not taken a certain type of shot, their percentage for that attempt category led to a "divide by 0" situation, which brought about an NA. I replaced those NAs with 0s in the cleaning, given those players had not taken a single shot (not exactly, but essentially shooting 0%). 
 
@@ -137,7 +123,8 @@ Now let's take a look at potential categorical imbalance after cleaning the data
 
 The three categorical variables here are player names, player positions, and player teams. The former is obviously balanced with thousands of different values, as there have been thousands of different NBA players since 1990.
 
-Let's start with distribution of different basketball player positions: 
+Let's start with distribution of different basketball player positions in @tbl-position-distribution:
+
 ```{r}
 #| label: tbl-position-distribution
 #| tbl-cap: "Examining Basketball Position Frequency for 1990-2017"
@@ -154,7 +141,7 @@ The five primary positions -- power forward (PF), point guard (PG), center (C), 
 
 There were a few hybrids of very small frequency (i.e. point guard/small forwards, etc., fewer than 20), which I cut in the cleaning to evaluate the five actual positions.
 
-Let's look at teams, our other variable.
+Let's look at teams, our other variable, in @tbl-team-distribution.
 
 ```{r}
 #| label: tbl-team-distribution
@@ -169,14 +156,14 @@ nba_season_statistics_cleaned |>
   knitr::kable(col.names = c("Team Name", "Frequency"))
 ```
 
-Likewise, this appears to be relatively balanced, especially for there being around 35 different levels. 
+Likewise, this appears to be somewhat balanced, especially for there being around 35 levels. However, there's some slight imbalance here. For that, and for reasons I'll expand on in the EDA appendix, I won't include it in my feature-engineered recipe.  
 
 ## Exploring the Target Variable
 
-Let's start with a univariate analysis, and look at a histogram of salaries in the NBA from 1990-2017:
+Let's start with a univariate analysis, and look at @fig-salary-distribution's display of salaries in the NBA from 1990-2017:
 
 ```{r}
-#| label: fig-1
+#| label: fig-salary-distribution
 #| fig-cap:  "Distribution of NBA Salaries: 1990-2017"
 #| echo: false
 
@@ -189,10 +176,10 @@ nba_season_statistics_cleaned |>
 
 The data is heavily right-skewed, with most players making less than $5 million in a year. It makes sense; most players aren't elite, and therefore the vast majority of players do not make anywhere near as much money as the most elite stars. With 15 players to pay and 5 players on a court at once (allowing for more individual impact than in other team sports), often one or two players on a team make more or as much as multiple other ones combined.
 
-To combat that skew, it'd be helpful to log-transform this data to reduce this skewness and make the distribution more normal. Thus, I applied a log-10 transformation to the variable. Here's what the new distribution looked like:
+To combat that skew, it'd be helpful to log-transform this data to reduce this skewness and make the distribution more normal. Thus, I applied a log-10 transformation to the variable. Here's what the new distribution looked like in @fig-transformed-salary-distribution:
 
 ```{r}
-#| label: fig-2
+#| label: fig-transformed-salary-distribution
 #| fig-cap:  "Distribution of NBA Salaries (log-transformed): 1990-2017"
 #| echo: false
 
@@ -204,7 +191,7 @@ nba_season_statistics_cleaned |>
 ```
 While not perfect (there appears to be a slight left skew), this distribution is much closer to normal than the first one. On this scale, most players fall in between roughly 5.7 and 6.7 here, which is still a lot of money relative to the average person.
 
-Below are some additional statistics for the log-transformed variable:
+Below are some additional statistics for the log-transformed variable in @tbl-log-salary-skim:
 
 ```{r}
 #| label: tbl-log-salary-skim
@@ -232,12 +219,1026 @@ Further relationships of the predictors (and ensuing transformations) with the l
 
 ### Data Splitting
 
-This is a regression problem. To begin, I split my cleaned dataset of 10,852 observations into training and testing data. Approximately 80% of the dataset -- or 8.679 observations were a part of the training set, while the other 20% -- or the other 2,173 observations -- went into the testing set. I also used 50% of the training dataset (4,339 observations) for EDA.
+This is a regression problem. To begin, I split my cleaned dataset of 10,852 observations into training and testing data. Approximately 80% of the dataset -- or 8,679 observations were a part of the training set, while the other 20% -- or the other 2,173 observations -- went into the testing set. I also used 50% of the training dataset (4,339 observations) for EDA.
 
-### Model Types and Parameters
+### Model Types
 
-I will fit six different models.
+I will fit six different model types, each with two recipes, making for 12 models total.
 
-The first is my baseline model: a null one.
+The first is my baseline model: a **null** one. It is very simple, and has no arguments. The second is an **ordinary linear regression** model; each of its predictors will have coefficients to make a salary estimation. It uses least squares to identify model parameters.
 
+The next two model types are tree-based ones, or ones that use decision trees to determine the impact of different variables in predicting the target variable: **random forest** and **boosted tree**. The random forest model splits predictor data into different sub-sections, in which the ensuing predictions use each sub-section's average or mode for a respective predictor variable.
+
+The boosted tree ones will put together ordinary regression decision trees after each are trained on residuals, weighting each by using an additive model. In other words, each successive decision tree "learns" from the errors of previous ones to improve the strength of the model.
+
+The final two model types are my **elastic net** and **K-nearest neighbor models.** The elastic net is a combination of lasso and ridge models, meaning that it uses penalty terms from both the of the aforementioned types to impact its regression predictions. The K-nearest neighbor models will pick a certain number of variables to predict log-transformed salary, and then identify the squared distance between each new data point's feature and each training point's feature before adding them up.
+
+I did use KNN on the tree-based recipe, even though it's non-parametric, given its similarities to the random forest model in which transformations and interactions could add unneccessary noise that could worsen the model.
+
+### Tuning parameters 
+
+For the random forest model, I will tune the **mtry** (updating based on the number of predictor columns after each recipe) and **min_n** parameters while setting the number of trees to 1,000 -- large enough for reliability. The min_n parameter is the minimum number of data points required for the model to split into each certain sub-section, or region. The mtry parameter represents the range of the number of randomly sampled predictors. 
+
+As a rule of thumb and to ensure computational efficiency, I updated the mtry tuning to set the maximum for this parameter as the square root of the total predictor columns left in each recipe. For example, for my kitchen sink recipe (more on that in a little bit), I set that particular RF model's max mtry at 7 because I ended up with 51 columns (or 50 predictors). Likewise, I set the feature-engineered recipe mtry range from 1 to 7, as that had 44 columns (43 predictors). 
+
+For the boosted tree models, I tuned the same parameters, but also tuned **learn_rate**, which measures the amount of influence each successive tree has compared to the previous ones on a scale of 0 to 1 (with 1 being the strongest effect). As for elastic net, I tuned the parameters **penalty** and **mixture**. Penalty determines how much regularization will be used to reduce overfitting, while mixture identifies how much of the lasso penalty will be applied on a range of 0 (no penalty, relying on a ridge regression model) to 1 (a full lasso model).
+
+Finally, I am tuning the **neighbors** parameter for my knn model. It, also known as K, measures the number of nearest neighbors to measure squared distances for at each data point.
+
+### Resampling and Recipes
+
+I will be using repeated V-fold cross-validation in this project: 5 folds and 3 repeats to randomly split the data into 5 equal-sized set, with different performance metrics for each. That process will be repeated thrice. 
+
+As for the recipes, I made two kitchen sink ones (where I included essentially every predictor) and two feature-engineered ones (where I removed some predictors, added interactions, and added general complexity). The difference between each pair was that one of each category was for tree-based models (i.e. one feature-engineered tree-based model, one kitchen sink tree-based one) and one was for non-parametric models. The primary difference between the non-parametric and parametric kitchen sink recipes were that I one-hot encoded the categorical variables I was including as predictors.
+
+That difference existed for the feature-engineered ones, though another primary difference was that the feature-engineered tree-based recipe did NOT include interactions and splines, while the non-parametric one did.
+
+For the kitchen sink recipe, I left the steps as simple as I could while adding some basic steps of complexity in order to make the model run. With thousands of different player names, I removed that categorical variable using step_rm() for computational efficiency and because it was an ID variable. I also removed the non-transformed player salary variable since it was a target variable that I had transformed already. From there, to make the model run, I used step_lincomb() since I had a number of predictors that directly related to each other (i.e. offensive win shares, defensive win shares, and total win shares; field goals attempted, field goals made, and field goals percentage), so I just wanted to ensure the recipe would run smoothly without potentially fatal linear combinations. 
+
+Additionally, I used step_novel() since the team variable had around 35 factor levels (leaving a chance that there'd be a new level appearing, so wanted to use it just in case), and then used step_dummy() to make sure my categorical variable data would be stored numerically. From there, I added steps to filter out zero-variance and near-zero variance, before normalizing all of my predictors to cap it off.
+
+In prepping and baking the kitchen sink recipe, I noticed that the near-zero variance filter step had filtered out essentially all of the new dummied team columns. Because most had very little variance and for more reasons touched on in my EDA appendix, I decided to remove team from my feature-engineered recipe.
+
+Going through that feature-engineered recipe, I eliminated 10 additional numeric variables (as well as team, and player salary + player names again), many of which I decided using my EDA data to construct @fig-corrplot, which can be found in the EDA appendix.
+
+A more thorough visual exploration of some of these relationships occurs in the EDA Appendix, but it was easy for me to remove three-point attempt rate, free throw rate, steal percentage, all of the rebounding percentages (TRB%, DRB%, ORB%), block percentage and turnover percentage because of the lack of strength whatsoever in their respective relationships with the target variable (and they had no especially strong relationship with other variables I was planning to keep as well). I also removed another numerical ID variable, and I also removed personal fouls (PF), as it's typically an inevitable product of playing a bunch of games. That's why even though committing a foul has a negative result, it has a somewhat positive relationship with salary, minutes played, games played, and even advanced individual value statistics like win shares and value over replacement (VORP).
+
+After that, for my non-tree-based recipe, I applied a square-root transformation to assist percentage (AST%), field goals made (FG), field goals attempted, two-pointers made and attempted, free throws made and attempted, steals, points, and offensive/defensive/total rebounds. Ultimately, I applied this to make their slightly right-skew distributions more normal and to improve the fits in the linear, elastic net, and null models. 
+
+Likewise, I applied the stronger YeoJohnson transformations for each of the win share statistics (offensive, defensive, total), VORP, PER, three-point percentage, three-pointers attempted and made, and blocks -- some of which had negative values and required a log/square root transformation or were at 0 and required a log transformation. 
+
+I also applied a square (as in raising to the second power) transformation through a step_mutate() step to lessen a left skew for free throw percentage.
+
+I then added a step_cut step to turn the "season start" numeric variable into a factor with five-year ranges from 1990-1995, '96-2000, and so on until getting to 2015-17. I'll justify this in the EDA appendix, but the GIST of that was to consider the gradual rise of the salary cap in the NBA for different eras. After making my categorical predictors into binary terms and considering potential new factor levels with step_novel, I added interactions to account for different bivariate and multivariate relationships within the data to affect log-transformed salary.
+
+I'll dive into the justification behind those interactions in the appendix, but essentially, I identified some positive relationships between certain variables in @fig-corrplot before examining each pair against the target variable. I had 10 in total -- 1) position and assists, 2) field goals and points, 3) effective field goal percentage (eFG%) and true shooting percentage, 4) two-point percentage and eFG%, 5) offensive win shares and win shares, 6) defensive win shares and win shares, 7) offensive rebounds and total rebounds, 8) defensive rebounds and total rebounds, 9) field goals attempted and field goals made, and 10) games played and minutes played. I also added a splines (step_ns) step for age since its distribution wasn't normal nor especially skewed anywhere (as age is discrete, and doesn't have a linear relationship with peak performance nor salary); I gave it 3 degrees of freedom. From there, I added zero variance and near-zero variance filters to prevent unnecessary noise from entering the later stages of fitting, as well as a normalization step at the end.
+
+My tree-based feature-engineered recipe was largely similar, sans the interactions, transformations, and splines steps since they aren't necessary for parametric models... they would only add unnecessary noise. In all, I ended with 58 columns (57 predictors) in my non-parametric, feature-engineered recipe, and 44 in my tree-based feature-engineered recipe. In my kitchen sink non-parametric and parametric ones, I had 50 and 51, respectively.
+
+To compare these 12 total models, I'll evaluate them by RMSE, or the average difference between the predicted values and the observed values. Because it shows that difference, it's a solid indicator of each model's accuracy in predicting observed values. Thus, the lower the RMSE, the more accurate a certain model is. In this case, with a log-transformed target variable, the RMSE will be calculated on that scale.
+
+## Model Building and Selection Results
+
+As stated above, I'm comparing models by their mean RMSE. @tb-model-results shows how the best models performed, as well as an overview of their ideal tuning parameters:
+
+```{r}
+#| label: tbl-model-results
+#| tbl-cap: "Model RMSE and parameter Results"
+#| echo: false
+
+load(here("results/tbl_model_results.rda"))
+
+options(knitr.kable.NA = 'None')
+
+tbl_model_results |>
+  kable() 
+```
+
+It's clear that with a mean RMSE of about .341 -- and a few standard deviations away from the mean RMSE of the kitchen sink boosted tree -- the random forest model with the kitchen sink recipe is the best performing model with ideal hyperparameters of 7 randomly selected predictors and 2 minimum observations to split a node. It's the one I'll move forward with. Ultimately, it seems like the tree-based kitchen sink recipe appeared to be the most effective of the four, closely followed by both of the feature-engineered ones. It's possible that since the first model mentioned detected the interactions without my input, maybe I inserted an extra interaction or spline step (or missed one) that made the difference. 
+
+Now, diving into the parameters. As stated above, the winning random forest model type had ideal parameters of 7 mtry and 2 min_n. @fig-rf-parameters shows a plot of those hyperparameters:
+
+```{r}
+#| label: fig-rf-parameters
+#| fig-cap: "Random Forest Hyperparameters, Kitchen Sink"
+#| echo: false
+
+load(here("results/tuned_rf_kitchen.rda"))
+autoplot(tuned_rf_kitchen, metric = "rmse") +
+  labs(title = "Random Forest Hyperparameters")
+```
+
+It appears that the more randomly selected predictors there are, the lower the RMSE is. That makes sense, given more regions made up of more predictors make for more accuracy and a closer prediction. In addition, it seems like the lower the requirement is for the amount of observations needed to split a node, the lower the RMSE is. That would mean more node splits lead to a slightly more accurate model. Would I tune this further in the future, I'd likely set the mtry value a little lower. Although its path is beginning to flatten out, it appears as if it'll continue decreasing as it its value goes upward. If its impact on computational speed was reasonable (which it likely would be) I'd likely try out abiding by the 70% rule to increase the number of mtry to about 35.
+
+Now, let's look at the ideal hyperparameters in @fig-bt-parameters for boosted tree, the next-best-performing model:
+
+```{r}
+#| label: fig-bt-parameters
+#| fig-cap: "Boosted Tree Hyperparameters, Kitchen Sink"
+#| echo: false
+
+load(here("results/tuned_bt_kitchen.rda"))
+autoplot(tuned_bt_kitchen, metric = "rmse") +
+  labs(title = "Boosted Tree Hyperparameters")
+```
+
+Given these lines are virtually flat and one color (where min_n = 40), it seems like learn_rate has a much stronger impact on the boosted tree model than the number of randomly sampled predictors and the minimal node size do. As that value goes up and edges closer upward, the RMSE goes down. It seems more impact that the previous trees have on the successive ones' prediction/averaging leads to a better model (if that impact is slight, as the ideal .32 value indicates). For future tuning, I'd probably hone in on values between .2 and .5 to see if I'd get I'd get better results.
+
+
+Now, here are the ideal hyperparameters for the elastic net model type in @fig-en-parameters:
+
+```{r}
+#| label: fig-en-parameters
+#| fig-cap: "Elastic Net Hyperparameters, Feature-engineered"
+#| echo: false
+
+load(here("results/tuned_elastic_fe.rda"))
+autoplot(tuned_elastic_fe, metric = "rmse") +
+  labs(title = "Elastic Net Hyperparameters")
+```
+
+It appears that a lower amount of regularization is ideal, as the graph shoots up right before the penalty value hits .01. In fact, since the ideal amount of regularization is very close to 0 (1^-10), it indicates that a ridge regression model might be the best bet. The difference between mixtures, or proportions of lasso penalties, doesn't appear to be as significant as the penalty with less regularization, though a lower one (.05) has the lowest RMSE with ideal regularization. As the penalty gets closer to 1, though, a lower proportion of lasso penalty has a lower RMSE. This makes sense, given a regularization value of 1 would indicate a full lasso model would be the way to go. 
+
+If I were to tune more, I'd likely exchange the elastic net model for a ridge one, given the ideal penalty is 0 for both the feature-engineered and kitchen sink models.
+
+Finally, to wrap this up, let's examine the best hyperparameters for the KNN model type in @fig-knn-parameters:
+
+```{r}
+#| label: fig-knn-parameters
+#| fig-cap: "KNN Hyperparameters, Feature-engineered"
+#| echo: false
+
+load(here("results/tuned_knn_kitchen.rda"))
+autoplot(tuned_knn_kitchen, metric = "rmse") +
+  labs(title = "KNN Hyperparameters")
+```
+
+The more nearest neighbors there are, the lower the RMSE is. With the ideal range being 15 -- the maximum -- it seems like the more neighbors each data point has for the model to predict its values, the more accurate those predictions are.
+
+As stated above, I will move forward with the random forest model that uses the kitchen sink recipe. It had the lowest RMSE at .341, and is multiple standard deviations away from the next-best model, the boosted tree one that uses the kitchen sink model. I'm not surprised that the tree models performed the best, though I'm a little surprised it wasn't the feature-engineered ones, which finished in the middle of the pack. I thought the variables I eliminated -- many of which were not correlated with salary at all -- would eliminate noise, but that didn't appear the case (though they weren't too far off).
+
+Autoplots for the other four models that were tuned but not included here can be found in the EDA Appendix.
+
+## Final Model Analysis
+
+After fitting the model to the testing data, @tbl-final-stats displays the random forest model's new and final metrics:
+
+```{r}
+#| label: tbl-final-stats
+#| tbl-cap: "Random Forest (kitchen sink) Final Metrics"
+#| echo: false
+
+load(here("results/final_fit_metrics.rda"))
+final_fit_metrics |>
+  select(.metric, .estimate) |>
+  kable(col.names = c("Metric", "Value"))
+
+```
+
+The mean RMSE went down when fitting to the testing data. I also displayed other metrics that might be more familiar. The R-squared value measures the correlation between the predicted and observed values while the MAE (or mean absolute error) signifies the average difference between the actual and predicted salaries regardless of direction. 
+
+Here, a mean RMSE of around .34 demonstrates that the predicted salaries fall about .34 log10 units away from the observed values, which is somewhat larger than I expected. It'd mean that, for instance, a player making $5 million in a season would, on average, have a predicted salary that's almost $6 million off in the upper direction and $2 million off in the lower direction. The larger the number, the larger the difference is (which I'll examine over a transformed scale back to the original scale).
+
+Some easier values to digest are the R-squared value, which at .589, indicates a moderately strong relationship between the predicted and observed values. The mean absolute error, at about .249, indicates a .249-log10unit difference (smaller than the RMSE) between the observed and predicted values, which is moderate, but not massive.
+
+Now, it's time to compare the observed and predicted values -- on the original scale -- on a scatterplot in @fig-obs-pred-plot.
+
+```{r}
+#| label: fig-obs-pred-plot
+#| fig-cap: "Observed vs. Predicted Salaries: Original Scale"
+#| echo: false
+
+load(here("plots/obs_pred_salary_plot_best.rda"))
+obs_pred_salary_plot_best 
+```
+It's clear that as the salaries get past around $10 million, the model underestimates how much highly-paid players should be paid. 
+
+In some respects, that isn't necessarily an indictment on the model itself. Since these salaries are yearly, and a number of contracts in the NBA are multi-year deals (take a sample of the top 100 contracts in the NBA in 2010, for example)^[https://www.spotrac.com/nba/contracts/sort-value/all-time/start-2010/limit-100/], there are a number of players who are overpaid and whose statistics don't line up with their deserved values. That's probably a factor in the larger error as the salaries increase.
+
+Zooming in, though, let's look at how the model performed on those smaller contracts in @fig-obs-pred-plot-zoomed, where there appears to be a ton of data:
+
+```{r}
+#| label: fig-obs-pred-plot-zoomed
+#| fig-cap: "Observed vs. Predicted Salaries: Zooming into Smaller Contracts"
+#| echo: false
+
+load("plots/obs_pred_salary_plot_zoomed_best.rda")
+obs_pred_salary_plot_zoomed_best
+
+```
+
+The predictions appear to be much stronger here. On the whole, it's a decent model that is moderately accurate when it comes to predicting salary, though it has lots of room to improve for larger salaries. I think it's stronger than the others because of its ability to identify and weight interactions by itself without the human error (on my part) of removing variables that could've been meaningful in prediction (or vice versa: including too many variables that didn't play a huge factor).
+
+Though it isn't perfect, building a predictive model is definitely worthwhile because it at least moves the needle -- just compare it to the null baseline model's observed vs. predicted values in @fig-null-plot, which simply go off of the mean:
+
+```{r}
+#| label: fig-null-plot
+#| fig-cap: "Observed vs. Predicted Salaries: Null Model"
+#| echo: false
+
+load(here("plots/obs_pred_salary_plot_null.rda"))
+obs_pred_salary_plot_null
+
+```
+
+Clearly, simply going off of the mean (particularly in a sport where salaries constantly increase) isn't a great way of predicting how much a player makes (or should make). Therefore, building the models and selecting a well-performing one is well-worthwile to explore this predictive question.
+
+## Conclusion
+
+Ultimately, I've concluded that based on statistical production, there are a number of highly-paid NBA players who might be overpaid in a given year relative to their actual output according to the model (or, speaking in terms of the model alone, that it's difficult to predict higher salaries).  It seems like tree-based kitchen sink models (in my case) function the best, though maybe turning the elastic net model into a ridge based on its ideal parameters could make those predictions especially strong, too.
+
+In taking next steps, I'd love to examine the extra steps I added in each recipe to see which interactions, transformations, and splines were meaningful, and which weren't. From there, I'd do another round of tuning based on the findings I made above, and I'd work to see if I could concretely designate different players as overpaid and underpaid given their circumstances and statistics. Do certain teams overpay more than others? To some underpay? Does it vary by position? How about by era? These are questions that would be awesome as jumping-off points to build off this model with.
+
+## Appendix: EDA
+
+To conduct this EDA, I utilized 50% of my training data for the cleaned dataset (4,339 observations). I used a split lower than the 80-20 training/testing one because I didn't want to explore too much of my training set before running the recipes and conducting the tuning and fitting.
+
+### Exploring Categorical Variable Distribution
+
+I had two categorical variables to explore -- position and team -- in addition to each season year, which I factored and cut into bins through the recipe. I explored the univariate distributions of the first two in @tbl-position-distribution and @tbl-team-distribution, but let's look at each in relation to the target variable.
+
+#### Position
+
+@fig-position-bivar displays the relationship between position and log10-transformed salary:
+
+```{r}
+#| label: fig-position-bivar
+#| fig-cap: "Exploring Player Salary by Position"
+#| echo: false
+
+load(here("data_splits/nba_train_eda.rda"))
+
+nba_train_eda |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_density(fill = "skyblue") +
+  facet_wrap(~pos) +
+  labs(title = "Exploring Player Salary by Position", 
+       x = "Player Salary, log-transformed")
+```
+
+These appear to be moderately similar, though there don't appear to be too many shooting guards or point guards who have made a yearly salary high in the six-figure range. It could require some interactions along the way, though the distribution here isn't too skewed. Though there is a slight left skew, it doesn't need a massive transformation.
+
+#### Team
+
+@fig-team-bivar does the same for different teams:
+
+```{r}
+#| label: fig-team-bivar
+#| fig-cap: "Exploring Player Salary by Team"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_density(fill = "skyblue") +
+  facet_wrap(~tm) +
+  labs(title = "Exploring Player Salary by Team", 
+       x = "Player Salary, log-transformed")
+```
+
+Most teams that have been around for two decades-plus have relatively similar distributions. The ones with irregular ones haven't been around with their names and locations as long: Brooklyn (BRK, entered the league in 2010s)^[https://www.espn.com/nba/news/story?id=4925915], CHO^[https://www.nba.com/hornets/charlotte-hornets-name-returns-carolinas], NOP^[https://sports.yahoo.com/news/orleans-officially-changes-nickname-pelicans-233005547--nba.html], OKC^[https://www.kiro7.com/sports/on-this-date-9-years-ago-the-seattle-sonics-moved-to-oklahoma-city/547725919/], as well as NOK and WSB^[https://www.shrpsports.com/nba/explain.htm].
+
+There isn't significant variance among most of these teams, hinting that certain team types may not an especially significant role in predicting salary.
+
+That's partially why I decided **not to include team type** in my feature-engineered recipes. That, as well as the lack of balance and its inability to withstand a near-zero variance filter, indicated that I should remove it in that case.
+
+However, the main reason why I decided to do so was because of the NBA's salary cap. Unlike other sports -- like baseball, where teams in larger markets that generate more revenue can pay its players more money -- the NBA has a hard salary cap with maximum deals^[https://www.cbssports.com/nba/news/nba-cba-101-everything-to-know-about-new-agreement-from-salary-cap-to-free-agency-and-beyond/] that's dependent on how much revenue the league (not the teams themselves) generate. While there is a luxury tax, which gives richer teams some freedom to spend a little more, it's fairly easy for small-market teams to retain superstars they develop on large deals. 
+
+Just look at the contracts for Tim Duncan, a Hall-of-Famer for the San Antonio Spurs^[https://www.sportskeeda.com/basketball/top-5-biggest-contracts-spurs-history-ft-tim-duncan-kawhi-leonard#:~:text=%231%2C%20Tim%20Duncan%20(seven,league%20and%20San%20Antonio%20history.]. He stayed with the small-market team his entire career despite being an all-time great player largely because other teams could only match (not exceed) the max contract that the Spurs offered him.
+
+That structure allows for parity in team success, which prevents one or two teams from completely wrecking the scale by offering players significantly more money than everyone else. Thus, a franchise (not team success) doesn't have an especially strong effect on widely-varying salary distributions. With all of those factors in mind, I thought taking team out of the feature-engineered recipe was the right call. However, were I to explore this question more, I'd examine the effect of leaving the team variable in the model, dummying the variable, and taking out a near-zero variance filter.
+
+#### Season Start
+
+Let's look at the distribution of salary by season in @fig-season-bivar:
+
+```{r}
+#| label: fig-season-bivar
+#| fig-cap: "Exploring Player Salary by Year"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log_10_player_salary)) +
+  geom_density(fill = "skyblue") +
+  facet_wrap(~factor(season_start)) +
+  labs(title = "Exploring Player Salary by Year", 
+       x = "Player Salary, log-transformed")
+```
+
+It's clear that as time goes on, a greater portion of players made six and seven figures. Just look at the distribution of the 2017 graph, which is heavily left-skewed, against the 1990 plot, which has very close to normal distribution. It's evident that each year has an impact on predicting a player's salary. 
+
+This is mostly due to the way the NBA salary cap has skyrocketed in the last 30 years. It went from a little over $11 million in 1990 to over $99 million in 2017.^[https://www.spotrac.com/nba/cba/]. Consequently, teams had more money to spend on paying players.
+
+This is why I factored this originally numeric variable in my feature-engineered recipes, and cut the 28 seasons up into bin ranges of five years apiece. I wanted to account for a higher salary cap; a player averaging MVP-worthy numbers in 1990 did not command the same salary that an established superstar did in 2017. 
+
+Now, let's dive into numeric variable transformations and distributions:
+
+### Exploring Numeric Variable Distributions
+
+In searching for transformations, I examined a slew of almost 50 numeric variables to examine their distributions and relationships with log10-transformed salary. Here, I'll justify the ones that I ultimately did transform.
+
+Those are: assist percent, field goals, field goals attempted, three-pointers made, three-pointers attempted, two-pointers made and attempted, offensive/defensive/total win shares, VORP, PER, three-point percentage, free throw percentage, blocks, free throws made and attempted, steals, points, and total/offensive/defensive rebounds.
+
+#### Assist percent
+
+@fig-ast-pct displays the relationship between assist percentage and log-transformed salary.
+
+```{r}
+#| label: fig-ast-pct
+#| fig-cap: "Assist Percentage vs. Log-Transformed Salary"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = ast_percent, y = log_10_player_salary)) +
+  geom_point() +
+  labs(title = "Assist Percentage vs. Salary", x = "Assist Percentage",
+       y = "Log-10-Transformed Salary")
+
+```
+
+There's a clear right skew here; that's what prompted me to apply a square-root transformation, which looks much more normal as displayed in @fig-ast-pct-trans. It's not perfect, but much better, and applying a log transforming creates a left skew:
+
+```{r}
+#| label: fig-ast-pct-trans
+#| fig-cap: "Square root of Assist Percentage vs. Log-Transformed Salary"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(ast_percent), y = log_10_player_salary)) +
+  geom_point() +
+  labs(title = "Assist Percentage vs. Salary", x = "Square Root of Assist Percentage",
+       y = "Log-10-Transformed Salary")
+```
+
+For good measure, @fig-ast-pct-trans-uni shows the univariate distribution of this transformed variable:
+
+```{r}
+#| label: fig-ast-pct-trans-uni
+#| fig-cap: "Square root of Assist Percentage Distribution"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(ast_percent))) +
+  geom_histogram(color = "white") +
+  labs(title = "Assist Percentage Square Root Distribution", x = "Square Root of Assist Percentage")
+```
+
+I followed this same process with most of the square-root transformed variables. Each of the following sections compares their univariate relationships, before and after transforming:
+
+#### Field Goals Made
+
+@fig-fg displays the untransformed distribution, while @fig-fg-trans is the distribution after applying a square-root transformation: 
+
+```{r}
+#| label: fig-fg
+#| fig-cap: "Field Goals Made Distribution"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = fg)) +
+  geom_density() +
+  labs(x = "Field Goals Made")
+
+```
+
+
+```{r}
+#| label: fig-fg-trans
+#| fig-cap: "Field Goals Made Distribution (Square-Root Transformed"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = sqrt(fg))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Field Goals Made)")
+```
+
+
+#### Field Goals Attempted
+
+@fig-fga displays the untransformed distribution, while @fig-fga-trans is the distribution after applying a square-root transformation: 
+
+```{r}
+#| label: fig-fga
+#| fig-cap: "Field Goals Attempted Distribution"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = fga)) +
+  geom_density() +
+  labs(x = "Field Goals Attempted")
+```
+
+
+```{r}
+#| label: fig-fga-trans
+#| fig-cap: "Field Goals Attempted Distribution (Square-Root Transformed)"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = sqrt(fga))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Field Goals Attempted)")
+```
+
+This is almost the exact same distribution, which makes sense given total makes at least slightly increase as attempts increase. To make this as concise as I can, for makes and attempts, I'll show the distribution for one:
+
+#### Two-pointers made and attempted
+
+@fig-twos shows the untransformed distribution for two-pointers made, while @fig-twos-trans shows the distribution after the variable's transformed. Two-point attempts follow the same pattern.
+
+```{r}
+#| label: fig-twos
+#| fig-cap: "Two-pointers Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = x2p)) +
+  geom_density() +
+  labs(x = "Two-Pointers Made")
+```
+
+```{r}
+#| label: fig-twos-trans
+#| fig-cap: "Two-Pointers Distribution (Square-Root Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(x2p))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Two-Pointers")
+```
+
+#### Free throws attempted and made
+
+@fig-ft shows the untransformed distribution for free throws made, while @fig-ft-trans shows the distribution after the variable's transformed. Free throw attempts follow the same pattern.
+
+```{r}
+#| label: fig-ft
+#| fig-cap: "Free throws Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = ft)) +
+  geom_density() +
+  labs(x = "Free Throws Made")
+```
+
+```{r}
+#| label: fig-ft-trans
+#| fig-cap: "Free throws Distribution (Square-Root Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(ft))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Free throws")
+```
+
+#### Steals
+
+@fig-stl shows the untransformed distribution for steals, while @fig-stl-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-stl
+#| fig-cap: "Steals Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = stl)) +
+  geom_density() +
+  labs(x = "Steals")
+```
+
+```{r}
+#| label: fig-stl-trans
+#| fig-cap: "Steals Distribution (Square-Root Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(stl))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Steals")
+```
+
+#### Points
+
+@fig-pts shows the untransformed distribution for points, while @fig-pts-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-pts
+#| fig-cap: "Points Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = pts)) +
+  geom_density() +
+  labs(x = "Points")
+```
+
+```{r}
+#| label: fig-pts-trans
+#| fig-cap: "Points Distribution (Square-Root Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(pts))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Points")
+```
+
+#### Total Rebounds
+
+@fig-trb shows the untransformed distribution for total rebounds, while @fig-trb-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-trb
+#| fig-cap: "Total Rebounds Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = trb)) +
+  geom_density() +
+  labs(x = "Total Rebounds")
+```
+
+```{r}
+#| label: fig-trb-trans
+#| fig-cap: "Total Rebounds Distribution (Square-Root Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(trb))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Total Rebounds")
+```
+
+#### Defensive Rebounds
+
+@fig-drb shows the untransformed distribution for defensive rebounds, while @fig-drb-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-drb
+#| fig-cap: "Defensive Rebounds Distribution"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = drb)) +
+  geom_density() +
+  labs(x = "Defensive Rebounds")
+```
+
+```{r}
+#| label: fig-drb-trans
+#| fig-cap: "Defensive Rebounds Distribution (Square-Root Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(drb))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of Defensive Rebounds")
+```
+
+#### Offensive Rebounds
+
+@fig-orb shows the untransformed distribution for offensive rebounds, while @fig-orb-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-orb
+#| fig-cap: "Offensive Rebounds Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = orb)) +
+  geom_density() +
+  labs(x = "Offensive Rebounds")
+```
+
+```{r}
+#| label: fig-orb-trans
+#| fig-cap: "Offensive Rebunds Distribution (Square-Root Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(orb))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Square Root of OREB")
+```
+
+Now, let's look at log-based transformations. For these variables, I noticed that certain values were missing -- that was because these variables all had values that were 0 or lower that forced missing values to arise. As a result, to apply something equivalent to the log transformation effect in the recipe, I applied a Yeo-Johnson transformation in the recipe to the following variables. 
+
+Here, I'll compare their untransformed distributions versus their log-transformed ones.
+
+#### Offensive Win Shares
+
+@fig-ows shows the untransformed distribution for offensive win shares, while @fig-ows-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-ows
+#| fig-cap: "Offensive Win Shares Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = ows)) +
+  geom_density() +
+  labs(x = "Offensive Win Shares")
+```
+
+```{r}
+#| label: fig-ows-trans
+#| fig-cap: "Offensive Win Shares Distribution (Log-Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log(ows))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Offensive Win Shares, log-transformed")
+```
+
+#### Defensive Win Shares
+
+@fig-dws shows the untransformed distribution for defensive win shares, while @fig-dws-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-dws
+#| fig-cap: "Defensive Win Shares Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = dws)) +
+  geom_density() +
+  labs(x = "Defensive Win Shares")
+```
+
+```{r}
+#| label: fig-dws-trans
+#| fig-cap: "Defensive Win Shares Distribution (Log-Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log(dws))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Defensive Win Shares, log-transformed")
+```
+
+#### Win Shares
+
+@fig-ws shows the untransformed distribution for win shares, while @fig-ws-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-ws
+#| fig-cap: "Win Shares Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = ws)) +
+  geom_density() +
+  labs(x = "Win Shares")
+```
+
+```{r}
+#| label: fig-ws-trans
+#| fig-cap: "Win Shares Distribution (Log-Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log(ws))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Win Shares, log-transformed")
+```
+
+#### Value Over Replacement (VORP)
+
+@fig-vorp shows the untransformed distribution for VORP, while @fig-vorp-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-vorp
+#| fig-cap: "VORP Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = vorp)) +
+  geom_density() +
+  labs(x = "VORP")
+```
+
+```{r}
+#| label: fig-vorp-trans
+#| fig-cap: "VORP Distribution (Log-Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log(vorp))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "VORP, log-transformed")
+```
+
+#### Player Efficiency Rating (PER)
+
+@fig-per shows the untransformed distribution for PER, while @fig-per-trans shows the distribution after the variable's transformed. I added a square-root transformation for this, though there are negative values, which is why I applied the YeoJohnson transformation in the recipe.
+
+```{r}
+#| label: fig-per
+#| fig-cap: "PER Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = per)) +
+  geom_density() +
+  labs(x = "PER")
+```
+
+```{r}
+#| label: fig-per-trans
+#| fig-cap: "PER Distribution (Square Root)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(per))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "PER, Square Root")
+```
+
+#### Three-pointers made and attempted
+
+@fig-threes shows the untransformed distribution for three-pointers made, while @fig-threes shows the distribution after the variable's transformed. Attempts follow a very similar distribution.
+
+```{r}
+#| label: fig-threes
+#| fig-cap: "Three-Pointers Distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = x3p)) +
+  geom_density() +
+  labs(x = "Three-Pointers Made")
+```
+
+```{r}
+#| label: fig-threes-trans
+#| fig-cap: "Three-Pointers Distribution (Log-Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log(x3p))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Three-Pointers, log-transformed")
+```
+
+#### Three-Point Percentage
+
+@fig-threes-pct shows the untransformed distribution for three-point percentage, while @fig-threes-pct-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-threes-pct
+#| fig-cap: "Three-Point Percentage distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = x3p_percent)) +
+  geom_density() +
+  labs(x = "Three-Point Percentage")
+```
+
+```{r}
+#| label: fig-threes-pct-trans
+#| fig-cap: "Three-Point Percentage Distribution (Log-Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log(x3p_percent))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Three-Point Percentage, log-transformed")
+```
+
+#### Blocks
+
+@fig-blk shows the untransformed distribution for blocks, while @fig-blk-trans shows the distribution after the variable's transformed.
+
+```{r}
+#| label: fig-blk
+#| fig-cap: "Blocks distribution"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = blk)) +
+  geom_density() +
+  labs(x = "Blocks")
+```
+
+```{r}
+#| label: fig-blk-trans
+#| fig-cap: "Block Distribution (Log-Transformed)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = log(blk))) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Blocks, log-transformed")
+```
+
+#### Squaring free throw percentage
+
+Free throw percentage was a special case, since it was actually left-skewed, as displayed in  @fig-ft-pct.
+
+```{r}
+#| label: fig-ft-pct
+#| fig-cap: "Free Throw Percentage"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = ft_percent)) +
+  geom_density() +
+  labs(x = "Free Throw Percentage")
+```
+
+Thus, to combat this, I squared free throw percentage in the recipe to make the distribution normal by applying a step_mutate to redefine the variable. Here's what that transformation looked like in @fig-ft-pct-trans:
+
+```{r}
+#| label: fig-ft-pct-trans
+#| fig-cap: "Free Throw Percentage Distribution (Squared)"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = ft_percent^2)) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Free Throw Percentage, Squared")
+```
+
+Those are all of the transformations I made. Now, let's examine the variable interactions and removals:
+
+### Interactions and Removals
+
+@fig-corrplot displays the relationships between each of the numeric variables in the cleaned EDA dataset:
+
+```{r}
+#| label: fig-corrplot
+#| fig-cap: "Correlation Plot of Numeric Variables in NBA EDA Salary Dataset"
+#| echo: false
+
+load(here("data_splits/nba_train_eda.rda"))
+
+num_nba_values <- nba_train_eda |>
+  select(where(is.numeric))
+
+correlation_log_salary <- cor(num_nba_values)[1:50, 1:50]
+colnames(correlation_log_salary)<-c("ID","Season Start","Player Salary ($)", "Age", "Games Played",
+                                    "Games Started", "Minutes Played", "PER", "TS%", 
+                                    "3PA Rate", "FT Rate", "ORB%", "DRB%", "TRB%", "AST%",
+                                    "STL%", "BLK%", "TOV%", "USG%", "OWS", "DWS", "WS", "WS/48",
+                                    "OBPM", "DBPM", "BPM", "VORP", "FG", "FGA", "FG%", "3PM", "3PA",
+                                    "3P%", "2PM", "2PA", "2P%", "eFG%", "FTM", "FTA", "FT%", 
+                                    "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV", "PF", "PTS",
+                                    "Log-10 Transformed Player Salary ($)")
+rownames(correlation_log_salary)<-c("ID","Season Start","Player Salary ($)","Age", "Games Played",
+                                    "Games Started", "Minutes Played", "PER", "TS%", 
+                                    "3PA Rate", "FT Rate", "ORB%", "DRB%", "TRB%", "AST%",
+                                    "STL%", "BLK%", "TOV%", "USG%", "OWS","DWS", "WS", "WS/48",
+                                    "OBPM", "DBPM", "BPM", "VORP", "FG", "FGA",
+                                    "FG%", "3PM", "3PA", "3PT%","2PM", "2PA", "2P%", "eFG%", "FTM",
+                                    "FTA", "FT%", "ORB", "DRB", "TRB", "AST", "STL", "BLK", "TOV",
+                                    "PF", "PTS", "Log-10 Transformed Player Salary ($)")
+nba_corrplot <- corrplot::corrplot(correlation_log_salary, method = "color", tl.cex = 0.45) 
+
+```
+
+### Removals
+
+I've already justified why I got rid of names, un-transformed salary, the ID variable, personal fouls, and teams.
+
+The others I got rid of were steal percentage, three-point rate, free throw rate, offensive rebound percentage, defensive rebound percentage, total rebound percentage, block percentage, and turnover percentage.
+
+As is evident by zooming in or viewing the plot on a separate page, none of the percentage statistics have a strong relationship with log-transformed salary whatsoever, or other variables for that matter. The rebounding statistics all correlate highly with each other, but I thought they meant much less than most of the other predictors here. Three-point and free-throw rate also have nearly no relationship with the target variable.
+
+### Interactions
+
+As stated in the Resampling and Recipes section, I included 10 variable interactions, and one splines step in my feature-engineered, non-parametric recipe. The correlation plot displays shows that many of these variables correlate with each other, which is why I included them.
+
+For transformations I specified above, I made those transformations in examining the relationship, either plotting their relationship against log-10-transformed salary or referring to the correlation plot in @fig-corrplot:
+
+#### Assist and position
+
+```{r}
+#| label: fig-ast-pos
+#| fig-cap: "Transformed Assists vs. Log-Transformed Salary, Faceted by Position"
+#| echo: false
+nba_train_eda |>
+  ggplot(aes(x = sqrt(ast), y = log_10_player_salary)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  facet_wrap(~pos) +
+  labs(x = "Assists (SQRT)", y = "Log-Transformed Salary")
+```
+
+Based on @fig-ast-pos, it seems like centers and power forwards (even small forwards, to an extent) who rack up many assists tend to see increased salaries at a higher rate than point guards. It isn't an insanely substantial difference, but it's one I wanted to explore; since point guards often have the ball the most by virtue of their position, they tend to rack up more assists than players at other positions. Therefore, a taller player who can pass the ball well could be valuable, and this graph hints at such. Thus, I included the interaction.
+
+#### Field Goals and Points
+
+This is pretty self-explanatory -- more made shots equals more points. This supports that notion:
+
+```{r}
+#| label: fig-fg-pts
+#| fig-cap: "Points and Field Goals (transformed) vs. Log-Transformed Salary"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(fg), y = log_10_player_salary, color = sqrt(pts))) +
+  geom_point() +
+  labs(x = "Field Goals (square root)", y = "Log-Transformed Salary", color = "Points (square root)")
+```
+
+#### Effective Field Goal Percentage (eFG%) and True Shooting Percentage (TS%)
+
+The formulas in calculating these two weighted shooting percentages are pretty similar, only true shooting percentage takes into account free throws. @fig-corrplot shows that they have a very strong relationship with each other.
+
+#### Offensive Rebounds and Total Rebounds
+
+Also makes sense. More offensive rebounds equals more total rebounds. While this could lead to a linear combination, the step_lincomb() step near the end of my recipes ensures that it isn't an issue.
+
+```{r}
+#| label: fig-orb-trb
+#| fig-cap: "Offensive Rebounds and Total Rebounds (transformed) vs. Log-Transformed Salary"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(orb), y = log_10_player_salary, color = sqrt(trb))) +
+  geom_point() +
+  labs(x = "Offensive Rebounds (square root)", y = "Log-Transformed Salary", 
+       color = "Total Rebounds (square root)")
+```
+
+#### Defensive Rebounds and Total Rebounds
+
+Same thing here:
+
+```{r}
+#| label: fig-drb-trb
+#| fig-cap: "Defensive Rebounds and Total Rebounds (transformed) vs. Log-Transformed Salary"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = sqrt(drb), y = log_10_player_salary, color = sqrt(trb))) +
+  geom_point() +
+  labs(x = "Defensive Rebounds (square root)", y = "Log-Transformed Salary", 
+       color = "Total Rebounds (square root)")
+```
+
+#### Field goals made and attempted
+
+Also generally makes sense, with more attempts, professional basketball playres are more likely to have more total makes. See @fig-corrplot.
+
+#### Games and minutes played
+
+With more games played, it's very likely someone that someone will have played more minutes. Plus, someone who plays more is more likely to get paid more, as they're clearly valuable to their team:
+
+```{r}
+#| label: fig-g-mp
+#| fig-cap: "Games and Minutes Played vs. Log-Transformed Salary"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = g, y = log_10_player_salary, color = mp)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "red") +
+  labs(x = "Games", y = "Log-Transformed Salary", color = "Minutes Played")
+```
+
+#### Offensive Win Shares and Total Win Shares; Defensive Win Shares and Total Win Shares
+
+Total win shares isn't a direct sum of the two categories, but it's close -- @fig-corrplot demonstrates that these go hand-in-hand. Plus, the higher one's win-share total is, it demonstrates their value, which leads to higher salaries.
+
+#### Two-point percentage and eFG%
+
+They have a very strong relationship with each other in @fig-corrplot, which prompted an interaction. This makes sense, as two-point percentage is part of calculating effective field goal percentage.
+
+### Splines
+
+I added one splines step: for age. Here was its univariate distribution:
+
+```{r}
+#| label: fig-age-uni
+#| fig-cap: "Age Univariate Distribution"
+#| echo: FALSE
+
+nba_train_eda |>
+  ggplot(aes(x = age)) +
+  geom_density(fill = "skyblue") +
+  labs(x = "Age")
+```
+
+This looks relatively normal, but age's relationship with salary isn't necessarily a linear one that's easy to transform, as age is discrete:
+
+```{r}
+#| label: fig-age-bivar
+#| fig-cap: "Age vs. Log-Transformed Salary"
+#| echo: FALSE
+
+nba_train_eda |>
+  ggplot(aes(x = age, y = log_10_player_salary)) +
+  geom_point() +
+  labs(x = "Age", y = "Log10-Transformed Salary")
+```
+
+While @fig-corrplot indicates that the relationship between age and salary isn't strong, it's important -- younger players don't typically make as much, but quality players who get second and third contracts will often get paid much more than rookies as they enter their prime (around 26-32) before they begin retiring and/or physically declining. Because of that, this isn't necessarily a linear relationship.
+
+Because of that, I implemented a splines transformation here with 3 degrees of freedom. Here's what that looks like, accounting for the added curves.
+
+```{r}
+#| label: fig-age-splines
+#| fig-cap: "Age vs. Log-Transformed Salary with Splines"
+#| echo: false
+
+nba_train_eda |>
+  ggplot(aes(x = age, y = log_10_player_salary)) +
+  geom_point() +
+  geom_smooth(
+    method = lm,
+    formula = y ~ ns(x, df = 3),
+    color = "red",
+    se = FALSE) +
+  labs(x = "Age", y = "Log=transformed salary")
+```
+
+Those are all of the recipe transformations that I made after exploring the dataset, which were informed by those plots.
+
+### Table Displaying No Missingness in Cleaned Dataset
+
+This was referred to in the data overview section, specifically, the subsection "Examining Missingness for Target Variable and Cleaned Dataset." Here is a table demonstrating that that my cleaned dataset did not have missingness (after cleaning and before splitting), which meant I didn't need to impute values in my recipes:
+
+```{r}
+#| label: tbl-cleaned-missingness-data
+#| tbl-cap: "Examining Variable Missingness: 1990-2017"
+#| echo: false
+
+# checking missingness
+nba_season_statistics_cleaned |>
+  skim() |>
+  select(skim_variable, n_missing, complete_rate) |>
+  arrange(desc(n_missing)) |>
+  knitr::kable(col.names = c("Variable Name", "Number of Observations Missing", 
+                             "Rate of Observations Not Missing"))
+```
 

@@ -1,4 +1,5 @@
-# 6: Final fit for best model on training data, testing prediction, and observed vs. predicted values plot
+# 6: Final fit for best model on training data, testing prediction, and 
+# observed vs. predicted values plot
 
 # load packages ----
 library(tidyverse)
@@ -37,7 +38,7 @@ obs_pred_salary_plot_null <- ggplot(nba_test_res_null, aes(x = 10^log_10_player_
   geom_abline(lty = 2) + 
   geom_point(alpha = 0.3, color = "blue") + 
   labs(y = "Predicted Salary ($)", x = "Observed Salary ($) ",
-       title = "Baseline Model: Predicted vs. Observed Yearly NBA Salaries: 1990-2017") +
+       title = "Baseline Model: Predicted vs. Observed Yearly NBA Salaries: \n 1990-2017") +
   coord_obs_pred()
 
 obs_pred_salary_plot_zoomed_null <- ggplot(nba_test_res, aes(x = 10^log_10_player_salary, y = 10^.pred)) + 
@@ -48,3 +49,7 @@ obs_pred_salary_plot_zoomed_null <- ggplot(nba_test_res, aes(x = 10^log_10_playe
        subtitle = "This only includes observed salaries under $10,000,000.") +
   coord_obs_pred() +
   xlim(0, 10000000) 
+
+# writing in plots
+save(obs_pred_salary_plot_zoomed_null, file = here("plots/obs_pred_salary_plot_zoomed_null.rda"))
+save(obs_pred_salary_plot_null, file = here("plots/obs_pred_salary_plot_null.rda"))

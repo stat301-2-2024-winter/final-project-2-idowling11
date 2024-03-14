@@ -1,4 +1,5 @@
-# 6: Final fit for best model on training data, testing prediction, and observed vs. predicted values plot
+# 6: Final fit for best model on training data, testing prediction, and 
+# observed vs. predicted values plot
 
 # load packages ----
 library(tidyverse)
@@ -56,7 +57,7 @@ obs_pred_salary_plot_zoomed_best <- ggplot(nba_test_res, aes(x = 10^log_10_playe
   geom_abline(lty = 2) + 
   geom_point(alpha = 0.3, color = "blue") + 
   labs(y = "Predicted Salary ($)", x = "Observed Salary ($)",
-       title = "Zooming in: Predicted vs. Observed NBA Yearly Salaries: 1990-2017",
+       title = "Zooming in: Predicted vs. Observed NBA Yearly Salaries: \n1990-2017",
        subtitle = "This only includes observed salaries under $10,000,000.") +
   coord_obs_pred() +
   xlim(0, 10000000) 
